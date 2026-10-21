@@ -409,3 +409,8 @@ where
 ~~~~~
 
 See :ref:`where`.
+
+with\_
+~~~~~~
+
+See :ref:`with_`.

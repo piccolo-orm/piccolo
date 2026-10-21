@@ -34,6 +34,7 @@ from piccolo.query.mixins import (
     OrderByDelegate,
     OutputDelegate,
     WhereDelegate,
+    WithDelegate,
 )
 from piccolo.query.proxy import Proxy
 from piccolo.querystring import QueryString
@@ -43,6 +44,7 @@ from piccolo.utils.warnings import colored_warning
 
 if TYPE_CHECKING:  # pragma: no cover
     from piccolo.custom_types import Combinable
+    from piccolo.query.methods.cte import CTE
     from piccolo.table import Table  # noqa
 
 # Here to avoid breaking changes - will be removed in the future.
@@ -160,6 +162,7 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         "where_delegate",
         "having_delegate",
         "lock_rows_delegate",
+        "with_delegate",
     )
 
     def __init__(
@@ -186,8 +189,13 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
         self.where_delegate = WhereDelegate()
         self.having_delegate = WhereDelegate()
         self.lock_rows_delegate = LockRowsDelegate()
+        self.with_delegate = WithDelegate()
 
         self.columns(*columns_list)
+
+    def with_(self: Self, *ctes: CTE) -> Self:
+        self.with_delegate.with_(*ctes)
+        return self
 
     def columns(self: Self, *columns: Union[Selectable, str]) -> Self:
         _columns = self.table._process_column_args(*columns)
@@ -682,6 +690,10 @@ class Select(Query[TableInstance, list[dict[str, Any]]]):
             args.append(self.lock_rows_delegate._lock_rows.querystring)
 
         querystring = QueryString(query, *args)
+
+        with_qs = self.with_delegate.querystring
+        if with_qs is not None:
+            querystring = QueryString("{}{}", with_qs, querystring)
 
         return [querystring]
 

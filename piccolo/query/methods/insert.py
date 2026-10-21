@@ -18,18 +18,25 @@ from piccolo.query.mixins import (
     OnConflictAction,
     OnConflictDelegate,
     ReturningDelegate,
+    WithDelegate,
 )
 from piccolo.querystring import QueryString
 
 if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import Column
+    from piccolo.query.methods.cte import CTE
     from piccolo.table import Table
 
 
 class Insert(
     Generic[TableInstance], Query[TableInstance, list[dict[str, Any]]]
 ):
-    __slots__ = ("add_delegate", "on_conflict_delegate", "returning_delegate")
+    __slots__ = (
+        "add_delegate",
+        "on_conflict_delegate",
+        "returning_delegate",
+        "with_delegate",
+    )
 
     def __init__(
         self, table: type[TableInstance], *instances: TableInstance, **kwargs
@@ -38,7 +45,12 @@ class Insert(
         self.add_delegate = AddDelegate()
         self.returning_delegate = ReturningDelegate()
         self.on_conflict_delegate = OnConflictDelegate()
+        self.with_delegate = WithDelegate()
         self.add(*instances)
+
+    def with_(self: Self, *ctes: CTE) -> Self:
+        self.with_delegate.with_(*ctes)
+        return self
 
     ###########################################################################
     # Clauses
@@ -136,15 +148,23 @@ class Insert(
         ):
             returning = self.returning_delegate._returning
             if returning:
-                return [
-                    QueryString(
-                        "{}{}",
-                        querystring,
-                        returning.querystring,
-                        query_type="insert",
-                        table=self.table,
-                    )
-                ]
+                querystring = QueryString(
+                    "{}{}",
+                    querystring,
+                    returning.querystring,
+                    query_type="insert",
+                    table=self.table,
+                )
+
+        with_qs = self.with_delegate.querystring
+        if with_qs is not None:
+            querystring = QueryString(
+                "{}{}",
+                with_qs,
+                querystring,
+                query_type="insert",
+                table=self.table,
+            )
 
         return [querystring]
 

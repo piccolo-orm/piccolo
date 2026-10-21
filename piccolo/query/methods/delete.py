@@ -5,11 +5,12 @@ from typing import TYPE_CHECKING, TypeVar, Union
 
 from piccolo.custom_types import Combinable
 from piccolo.query.base import Query
-from piccolo.query.mixins import ReturningDelegate, WhereDelegate
+from piccolo.query.mixins import ReturningDelegate, WhereDelegate, WithDelegate
 from piccolo.querystring import QueryString
 
 if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
+    from piccolo.query.methods.cte import CTE
     from piccolo.table import Table
 
 
@@ -23,6 +24,7 @@ class Delete(Query):
         "force",
         "returning_delegate",
         "where_delegate",
+        "with_delegate",
     )
 
     def __init__(self, table: type[Table], force: bool = False, **kwargs):
@@ -30,6 +32,7 @@ class Delete(Query):
         self.force = force
         self.returning_delegate = ReturningDelegate()
         self.where_delegate = WhereDelegate()
+        self.with_delegate = WithDelegate()
 
     def where(self: Self, *where: Union[Combinable, QueryString]) -> Self:
         self.where_delegate.where(*where)
@@ -37,6 +40,10 @@ class Delete(Query):
 
     def returning(self: Self, *columns: Column) -> Self:
         self.returning_delegate.returning(columns)
+        return self
+
+    def with_(self: Self, *ctes: CTE) -> Self:
+        self.with_delegate.with_(*ctes)
         return self
 
     def _validate(self):
@@ -71,6 +78,10 @@ class Delete(Query):
                 querystring,
                 self.returning_delegate._returning.querystring,
             )
+
+        with_qs = self.with_delegate.querystring
+        if with_qs is not None:
+            querystring = QueryString("{}{}", with_qs, querystring)
 
         return [querystring]
 

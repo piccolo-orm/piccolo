@@ -9,11 +9,13 @@ from piccolo.query.mixins import (
     ReturningDelegate,
     ValuesDelegate,
     WhereDelegate,
+    WithDelegate,
 )
 from piccolo.querystring import QueryString
 
 if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns import Column
+    from piccolo.query.methods.cte import CTE
 
 
 class UpdateError(Exception):
@@ -26,6 +28,7 @@ class Update(Query[TableInstance, list[Any]]):
         "returning_delegate",
         "values_delegate",
         "where_delegate",
+        "with_delegate",
     )
 
     def __init__(
@@ -36,6 +39,11 @@ class Update(Query[TableInstance, list[Any]]):
         self.returning_delegate = ReturningDelegate()
         self.values_delegate = ValuesDelegate(table=table)
         self.where_delegate = WhereDelegate()
+        self.with_delegate = WithDelegate()
+
+    def with_(self, *ctes: CTE) -> Update:
+        self.with_delegate.with_(*ctes)
+        return self
 
     ###########################################################################
     # Clauses
@@ -114,5 +122,9 @@ class Update(Query[TableInstance, list[Any]]):
                 querystring,
                 self.returning_delegate._returning.querystring,
             )
+
+        with_qs = self.with_delegate.querystring
+        if with_qs is not None:
+            querystring = QueryString("{}{}", with_qs, querystring)
 
         return [querystring]
