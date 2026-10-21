@@ -1,5 +1,10 @@
-from piccolo.columns import Integer, Text, Varchar
+from unittest import TestCase
+
+from piccolo.columns import BigInt, Integer, Text, Varchar
+from piccolo.engine.postgres import PostgresEngine
+from piccolo.engine.sqlite import SQLiteEngine
 from piccolo.query.functions import Cast, Length
+from piccolo.table import create_table_class
 from tests.example_apps.music.tables import Band, Manager
 
 from .base import BandTest
@@ -132,3 +137,27 @@ class TestCast(BandTest):
             response,
             [{"name": "Pythonistas", "popularity": 1000}],
         )
+
+
+class TestCastTable(TestCase):
+    def test_existing_table(self):
+        """
+        If the ``as_type`` column already has a table, and the identifier
+        doesn't give us one, then the existing table should be used to work
+        out the column type.
+        """
+        sqlite_table = create_table_class(
+            "SQLiteTable", class_kwargs={"db": SQLiteEngine()}
+        )
+        postgres_table = create_table_class(
+            "PostgresTable", class_kwargs={"db": PostgresEngine(config={})}
+        )
+
+        for table, expected in (
+            (sqlite_table, "CAST(1 AS INTEGER)"),
+            (postgres_table, "CAST(1 AS BIGINT)"),
+        ):
+            with self.subTest(table=table):
+                as_type = BigInt()
+                as_type._meta.table = table
+                self.assertEqual(str(Cast(1, as_type=as_type)), expected)

@@ -7,7 +7,7 @@ from .array import (
     ArrayRemove,
     ArrayReplace,
 )
-from .conditional import Coalesce, NullIf
+from .conditional import Case, Coalesce, NullIf, When
 from .datetime import (
     AtTimeZone,
     Day,
@@ -41,6 +41,7 @@ __all__ = (
     "ArrayReplace",
     "AtTimeZone",
     "Avg",
+    "Case",
     "Cast",
     "Ceil",
     "Coalesce",
@@ -66,5 +67,6 @@ __all__ = (
     "Strftime",
     "Sum",
     "Upper",
+    "When",
     "Year",
 )
