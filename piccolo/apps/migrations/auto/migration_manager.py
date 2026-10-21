@@ -577,7 +577,14 @@ class MigrationManager:
                 if (old_column_class is not None) and (
                     column_class is not None
                 ):
-                    if old_column_class != column_class:
+                    base_column_class = params.get("base_column").__class__
+                    old_base_column_class = old_params.get(
+                        "base_column"
+                    ).__class__
+
+                    if (old_column_class != column_class) or (
+                        old_base_column_class != base_column_class
+                    ):
                         old_column = old_column_class(**old_params)
                         old_column._meta._table = _Table
                         old_column._meta._name = alter_column.column_name
@@ -593,6 +600,25 @@ class MigrationManager:
                         )
 
                         using_expression: Optional[str] = None
+
+                        # Array base column type changes
+                        is_array_change = (
+                            column_class.value_type == list
+                            and old_column_class.value_type == list
+                        )
+                        if is_array_change:
+                            # Postgres can't always cast the existing default
+                            # to the new array type (e.g. ``varchar[]`` to
+                            # ``integer[]``), so drop it, and restore it once
+                            # the column type has changed.
+                            await self._run_query(
+                                _Table.alter().drop_default(old_column)
+                            )
+
+                            using_expression = "{}::{}".format(
+                                alter_column.db_column_name,
+                                new_column.column_type,
+                            )
 
                         # Postgres won't automatically cast some types to
                         # others. We may as well try, as it will definitely
@@ -628,6 +654,30 @@ class MigrationManager:
                                     old_column=old_column,
                                     new_column=new_column,
                                     using_expression=using_expression,
+                                )
+                            )
+
+                        # If the default is also being changed, it gets set
+                        # later on. Otherwise restore the existing default,
+                        # which ``params`` doesn't contain, so get it from the
+                        # snapshot.
+                        if is_array_change and "default" not in params:
+                            existing_table = (
+                                await self.get_table_from_snapshot(
+                                    table_class_name=table_class_name,
+                                    app_name=self.app_name,
+                                    offset=-1 if backwards else 0,
+                                )
+                            )
+                            existing_column = (
+                                existing_table._meta.get_column_by_name(
+                                    alter_column.column_name
+                                )
+                            )
+                            await self._run_query(
+                                _Table.alter().set_default(
+                                    column=existing_column,
+                                    value=existing_column.get_default_value(),
                                 )
                             )
 

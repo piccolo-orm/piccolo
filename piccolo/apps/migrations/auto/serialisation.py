@@ -570,12 +570,17 @@ def serialise_params(
                 params=column._meta.params
             )
 
+            column_class_name = column.__class__.__name__
+            # A base column which came from a migration file has no name, and
+            # it's needed for comparing columns. ``params`` was deep copied,
+            # so this doesn't modify the original column.
+            column._meta.name = column_class_name
+
             # Include the extra imports and definitions required for the
             # column params.
             extra_imports.extend(serialised_params.extra_imports)
             extra_definitions.extend(serialised_params.extra_definitions)
 
-            column_class_name = column.__class__.__name__
             extra_imports.append(
                 Import(
                     module=column.__class__.__module__,

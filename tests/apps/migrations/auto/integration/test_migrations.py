@@ -18,6 +18,7 @@ from piccolo.apps.migrations.commands.backwards import (
 )
 from piccolo.apps.migrations.commands.forwards import ForwardsMigrationManager
 from piccolo.apps.migrations.commands.new import (
+    NoChanges,
     _create_migrations_folder,
     _create_new_migration,
 )
@@ -740,7 +741,11 @@ class TestMigrations(MigrationTestCase):
             ]
         )
 
-    def test_array_base_column_change(self):
+    @engines_only("postgres")
+    @patch("piccolo.conf.apps.Finder.get_app_config")
+    def test_array_base_column_change_postgres(
+        self, get_app_config: MagicMock
+    ):
         """
         There was a bug when trying to change the base column of an array:
 
@@ -750,6 +755,8 @@ class TestMigrations(MigrationTestCase):
         wasn't importing ``Text``.
 
         """
+        get_app_config.return_value = self._get_app_config()
+
         self._test_migrations(
             table_snapshots=[
                 [self.table(column)]
@@ -757,7 +764,143 @@ class TestMigrations(MigrationTestCase):
                     Array(base_column=Varchar()),
                     Array(base_column=Text()),
                 ]
-            ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default == "'{}'::text[]",
+                ]
+            ),
+        )
+
+    @engines_only("postgres")
+    @patch("piccolo.conf.apps.Finder.get_app_config")
+    def test_array_base_column_change_with_default(
+        self, get_app_config: MagicMock
+    ):
+        """
+        Make sure a custom default is kept when the base column changes.
+        """
+        get_app_config.return_value = self._get_app_config()
+
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=Varchar(), default=["a"]),
+                    Array(base_column=Text(), default=["a"]),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.column_default == "'{a}'::text[]",
+                ]
+            ),
+        )
+
+        # Reversing the migration should restore the old default.
+        self._run_backwards(migration_id="1")
+        row_meta = self.get_postgres_column_definition(
+            tablename="my_table", column_name="my_column"
+        )
+        self.assertEqual(row_meta.column_default, "'{a}'::character varying[]")
+
+    @engines_only("postgres")
+    @patch("piccolo.conf.apps.Finder.get_app_config")
+    def test_array_base_column_change_no_changes(
+        self, get_app_config: MagicMock
+    ):
+        """
+        After changing the base column, the next auto migration shouldn't
+        detect any changes (it used to raise a ``ValueError`` instead).
+        """
+        app_config = self._get_app_config()
+        get_app_config.return_value = app_config
+
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=Varchar()),
+                    Array(base_column=Text()),
+                ]
+            ],
+        )
+
+        app_config.table_classes = [self.table(Array(base_column=Text()))]
+        with self.assertRaises(NoChanges):
+            run_sync(
+                _create_new_migration(
+                    app_config=app_config, auto=True, auto_input="y"
+                )
+            )
+
+    @engines_only("postgres")
+    @patch("piccolo.conf.apps.Finder.get_app_config")
+    def test_array_base_column_and_default_change(
+        self, get_app_config: MagicMock
+    ):
+        """
+        Postgres can't cast a ``varchar[]`` default to ``integer[]``, so make
+        sure we can change the base column and the default together.
+        """
+        get_app_config.return_value = self._get_app_config()
+
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=Varchar(), default=["a"]),
+                    Array(base_column=Integer(), default=[1]),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.column_default == "'{1}'::integer[]",
+                ]
+            ),
+        )
+
+        self._run_backwards(migration_id="1")
+        row_meta = self.get_postgres_column_definition(
+            tablename="my_table", column_name="my_column"
+        )
+        self.assertEqual(row_meta.column_default, "'{a}'::character varying[]")
+
+    @engines_only("cockroach")
+    @patch("piccolo.conf.apps.Finder.get_app_config")
+    def test_array_base_column_change_cockroach(
+        self, get_app_config: MagicMock
+    ):
+        """
+        There was a bug when trying to change the base column of an array:
+
+        https://github.com/piccolo-orm/piccolo/issues/1076
+
+        It wasn't importing the base column, e.g. for ``Array(Text())`` it
+        wasn't importing ``Text``.
+
+        """
+        get_app_config.return_value = self._get_app_config()
+
+        self._test_migrations(
+            table_snapshots=[
+                [self.table(column)]
+                for column in [
+                    Array(base_column=Varchar()),
+                    Array(base_column=Text()),
+                ]
+            ],
+            test_function=lambda x: all(
+                [
+                    x.data_type == "ARRAY",
+                    x.is_nullable == "NO",
+                    x.column_default == "ARRAY[]",
+                ]
+            ),
         )
 
     ###########################################################################
