@@ -76,7 +76,7 @@ def _generate_migration_meta(app_config: AppConfig) -> NewMigrationMeta:
     """
     # The microseconds originally weren't part of the ID, but there was a
     # chance that the IDs would clash if the migrations are generated
-    # programatically in quick succession (e.g. in a unit test), so they had
+    # programmatically in quick succession (e.g. in a unit test), so they had
     # to be added. The trade off is a longer ID.
     _id = now().strftime("%Y-%m-%dT%H:%M:%S:%f")
 

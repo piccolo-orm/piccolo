@@ -13,7 +13,7 @@ See the :ref:`tester app<TesterApp>`.
 
 You can put your test files anywhere you like, but a good place is in a ``tests``
 folder within your Piccolo app. The test files should be named like
-``test_*. py`` or ``*_test.py`` for pytest to recognise them.
+``test_*.py`` or ``*_test.py`` for pytest to recognise them.
 
 -------------------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ To specify any attribute, pass the ``defaults`` dictionary to the ``build`` meth
 
 .. code-block:: python
 
-    manager = ModelBuilder.build(Manager)
+    manager = await ModelBuilder.build(Manager)
 
     # Using table columns:
     band = await ModelBuilder.build(
@@ -194,7 +194,7 @@ It's preferable to make your tests natively async though.
 
 If you prefer using pytest's function based tests, then take a look at
 `pytest-asyncio <https://github.com/pytest-dev/pytest-asyncio>`_. Simply
-install it using ``pip install pytest-asyncio``, then you can then write tests
+install it using ``pip install pytest-asyncio``, then you can write tests
 like this:
 
 .. code-block:: python

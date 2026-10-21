@@ -14,7 +14,7 @@ Prerequisites
 -------------
 
 - Piccolo ORM installed and configured
-- Both ``app_a`` and ``app_b`` listed in ``piccolo_conf.py`` under ``PICCOLO_APPS``
+- Both ``app_a`` and ``app_b`` listed in ``piccolo_conf.py`` under ``APP_REGISTRY``
 - Basic familiarity with Piccolo migrations
 
 Step-by-Step Instructions
@@ -57,7 +57,7 @@ Ensure the definition matches exactly what it was in ``app_a``.
 5. Create a Migration in ``app_b``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generate a new  fake migration for ``app_b`` to register ``TableA``:
+Generate a new fake migration for ``app_b`` to register ``TableA``:
 
 .. code-block:: bash
 

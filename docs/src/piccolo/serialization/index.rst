@@ -169,14 +169,14 @@ extra fields (that is, fields that would not otherwise be in the generated model
 The allowed values are:
 
 * ``'ignore'`` (default): silently ignore extra fields
-* ``'allow'``: accept the extra fields and assigns them to the model
+* ``'allow'``: accept the extra fields and assign them to the model
 * ``'forbid'``: fail validation if extra fields are present
 
 So if we want to disallow extra fields, we can do:
 
 .. code-block:: python
 
-    from pydatic.config import ConfigDict
+    from pydantic.config import ConfigDict
 
     config: ConfigDict = {
         "extra": "forbid"
@@ -221,7 +221,7 @@ all fields to be optional.
     )
 
     # This no longer raises an exception:
-    >>> BandModel()
+    >>> BandFilterModel()
 
 Subclassing the model
 ~~~~~~~~~~~~~~~~~~~~~

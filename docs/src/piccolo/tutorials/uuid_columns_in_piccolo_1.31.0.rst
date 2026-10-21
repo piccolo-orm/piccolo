@@ -8,7 +8,7 @@ Prior to ``piccolo==1.31.0``, Postgres
 default values using ``uuid_generate_v4()``, which is part of the
 ``uuid-ossp`` extension.
 
-In all the versions of Posgres that Piccolo supports, there is now a
+In all the versions of Postgres that Piccolo supports, there is now a
 ``gen_random_uuid()`` function built in, which Piccolo now uses for all new
 ``UUID`` columns for generating default values in the database.
 

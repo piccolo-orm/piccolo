@@ -237,7 +237,7 @@ default:
 .. code-block:: python
 
     >>> await RecordingStudio.select(RecordingStudio.facilities)
-    [{facilities: '{"restaurant": true, "mixing_desk": true}'}]
+    [{'facilities': '{"restaurant": true, "mixing_desk": true}'}]
 
 However, we can ask Piccolo to deserialise the JSON automatically (see :ref:`load_json`):
 
@@ -248,7 +248,7 @@ However, we can ask Piccolo to deserialise the JSON automatically (see :ref:`loa
     ... ).output(
     ...     load_json=True
     ... )
-    [facilities: {"restaurant": True, "mixing_desk": True}}]
+    [{'facilities': {'restaurant': True, 'mixing_desk': True}}]
 
 With ``objects`` queries, we can modify the returned JSON, and then save it:
 

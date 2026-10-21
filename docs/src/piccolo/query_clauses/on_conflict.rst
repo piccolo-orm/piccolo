@@ -94,7 +94,7 @@ If we fetch the data from the database, we'll see that it was updated:
 
 Using the ``target`` argument, we can specify which constraint we're concerned
 with. By specifying ``target=Band.name`` we're only concerned with the unique
-constraint for the ``band`` column. If you omit the ``target`` argument on
+constraint for the ``name`` column. If you omit the ``target`` argument on
 ``DO NOTHING`` action, then it works for all constraints on the table. For 
 ``DO UPDATE`` action, ``target`` is mandatory and must be provided.
 

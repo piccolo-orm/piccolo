@@ -131,7 +131,7 @@ You can register functions and coroutines, which are automatically added to
 the ``piccolo`` CLI.
 
 The `targ <http://targ.readthedocs.io/>`_ library is used under the hood. It
-makes it really easy to write command lines tools - just use type annotations
+makes it really easy to write command line tools - just use type annotations
 and docstrings. Here's an example:
 
 .. code-block:: python

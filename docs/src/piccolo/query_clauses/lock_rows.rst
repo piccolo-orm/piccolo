@@ -21,7 +21,7 @@ Basic usage without parameters:
 
 .. code-block:: python
 
-    await Band.select(Band.name == 'Pythonistas').lock_rows()
+    await Band.select().where(Band.name == 'Pythonistas').lock_rows()
 
 Equivalent to:
 
@@ -45,7 +45,7 @@ You can specify a different lock strength:
 
 .. code-block:: python
 
-    await Band.select(Band.name == 'Pythonistas').lock_rows('SHARE')
+    await Band.select().where(Band.name == 'Pythonistas').lock_rows('SHARE')
 
 Which is equivalent to:
 
@@ -62,7 +62,7 @@ waiting for the other transaction to release the lock.
 
 .. code-block:: python
 
-    await Band.select(Band.name == 'Pythonistas').lock_rows('UPDATE', nowait=True)
+    await Band.select().where(Band.name == 'Pythonistas').lock_rows('UPDATE', nowait=True)
 
 
 skip_locked
@@ -72,7 +72,7 @@ Ignore locked rows.
 
 .. code-block:: python
 
-    await Band.select(Band.name == 'Pythonistas').lock_rows('UPDATE', skip_locked=True)
+    await Band.select().where(Band.name == 'Pythonistas').lock_rows('UPDATE', skip_locked=True)
 
 
 of

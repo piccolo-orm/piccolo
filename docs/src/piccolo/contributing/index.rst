@@ -94,6 +94,6 @@ Profiling
 This isn't required to contribute to Piccolo, but is useful when investigating
 performance problems.
 
- * Install the dependencies: ``pip install requirements/profile-requirements.txt``
+ * Install the dependencies: ``pip install -r requirements/profile-requirements.txt``
  * Make sure a Postgres database called ``piccolo_profile`` exists.
  * Run ``./scripts/profile.sh`` to get performance data.

@@ -174,7 +174,7 @@ class Create(Generic[TableInstance]):
 
     def __await__(self) -> Generator[None, None, TableInstance]:
         """
-        If the user doesn't explicity call .run(), proxy to it as a
+        If the user doesn't explicitly call .run(), proxy to it as a
         convenience.
         """
         return self.run().__await__()
@@ -229,7 +229,7 @@ class UpdateSelf:
 
     def __await__(self) -> Generator[None, None, None]:
         """
-        If the user doesn't explicity call .run(), proxy to it as a
+        If the user doesn't explicitly call .run(), proxy to it as a
         convenience.
         """
         return self.run().__await__()
@@ -286,7 +286,7 @@ class GetRelated(Generic[ReferencedTable]):
         self,
     ) -> Generator[None, None, Optional[ReferencedTable]]:
         """
-        If the user doesn't explicity call .run(), proxy to it as a
+        If the user doesn't explicitly call .run(), proxy to it as a
         convenience.
         """
         return self.run().__await__()

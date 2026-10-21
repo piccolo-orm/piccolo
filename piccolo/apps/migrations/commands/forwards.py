@@ -124,7 +124,7 @@ async def run_forwards(
     preview: bool = False,
 ) -> MigrationResult:
     """
-    Run the migrations. This function can be used to programatically run
+    Run the migrations. This function can be used to programmatically run
     migrations - for example, in a unit test.
     """
     if app_name == "all":

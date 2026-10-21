@@ -415,7 +415,7 @@ custom function).
 
 The ``Cast`` function is now more flexible.
 
-``Array`` concantenation
+``Array`` concatenation
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Values can be prepended:
@@ -839,7 +839,7 @@ Also, improved the error messages when creating a ``BaseUser`` - thanks to
 1.14.0
 ------
 
-Laying the foundations for alterative Postgres database drivers (e.g.
+Laying the foundations for alternative Postgres database drivers (e.g.
 ``psqlpy``). Thanks to @insani7y and @chandr-andr for their help with this.
 
 .. warning::
@@ -1673,7 +1673,7 @@ If you want the existing behaviour:
 .. code-block:: python
 
   async with DB.transaction():
-      async with DB.transactiona(allow_nested=False):
+      async with DB.transaction(allow_nested=False):
           # TransactionError!
 
 -------------------------------------------------------------------------------
@@ -4086,7 +4086,7 @@ for more details).
   was ``id``.
 * ``where`` clauses can now accept ``Table`` instances. For example:
   ``await Band.select().where(Band.manager == some_manager).run()``, instead
-  of having to explicity reference the ``id``.
+  of having to explicitly reference the ``id``.
 
 -------------------------------------------------------------------------------
 
@@ -4176,7 +4176,7 @@ Add the ``Array`` column type as a top level import in ``piccolo.columns``.
 0.18.0
 ------
 * Refactored ``forwards`` and ``backwards`` commands for migrations, to make
-  them easier to run programatically.
+  them easier to run programmatically.
 * Added a simple ``Array`` column type.
 * ``table_finder`` now works if just a string is passed in, instead of having
   to pass in an array of strings.

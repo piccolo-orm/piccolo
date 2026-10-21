@@ -27,7 +27,7 @@ Migration table
 
 When running the migrations, Piccolo will automatically create a database table
 called ``migration`` if it doesn't already exist. Each time a migration is
-succesfully ran, a new row is added to this table.
+successfully run, a new row is added to this table.
 
 .. _FakeMigration:
 
@@ -99,14 +99,14 @@ Or backwards:
 
 .. code-block:: bash
 
-    piccolo migrations backwards 2022-09-04T19:44:09 --preview
+    piccolo migrations backwards my_app 2022-09-04T19:44:09 --preview
 
 -------------------------------------------------------------------------------
 
 Checking migrations
 -------------------
 
-You can easily check which migrations have and haven't ran using the following:
+You can easily check which migrations have and haven't run using the following:
 
 .. code-block:: bash
 
@@ -118,7 +118,7 @@ Source
 ------
 
 These are the underlying Python functions which are called, so you can see
-all available options. These functions are convered into a CI using
+all available options. These functions are converted into a CLI using
 `targ <http://targ.readthedocs.io/>`_.
 
 .. currentmodule:: piccolo.apps.migrations.commands.forwards

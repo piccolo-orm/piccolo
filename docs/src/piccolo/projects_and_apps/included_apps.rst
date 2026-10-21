@@ -133,10 +133,10 @@ short example:
             "Manager": [
                 { "id": 1, "name": "Dave" },
                 { "id": 2, "name": "Pythonistas" },
-                { "id": 2, "name": "Rustaceans" }
+                { "id": 3, "name": "Rustaceans" }
             ],
             "Band": [
-                { "id": 1, "name": "Pythonistas" "manager": 2 },
+                { "id": 1, "name": "Pythonistas", "manager": 2 },
                 { "id": 2, "name": "Darts", "manager": 2 },
                 { "id": 3, "name": "Gophers", "manager": 1 }
             ]
@@ -202,7 +202,7 @@ interested in, then run the following:
 
     piccolo schema generate > tables.py
 
-.. warning:: This feature is still a work in progress. However, even in it's
+.. warning:: This feature is still a work in progress. However, even in its
     current form it will save you a lot of time. Make sure you check the
     generated code to make sure it's correct.
 
@@ -282,7 +282,7 @@ tester
 Launches `pytest <https://pytest.org/>`_ , which runs your unit test suite. The
 advantage of using this rather than running ``pytest`` directly, is the
 ``PICCOLO_CONF`` environment variable will automatically be set before the
-testing starts, and will be restored to it's initial value once the tests
+testing starts, and will be restored to its initial value once the tests
 finish.
 
 .. code-block:: bash

@@ -3,7 +3,7 @@ What is Piccolo?
 
 Piccolo is a fast, easy to learn ORM and query builder.
 
-Some of it's stand out features are:
+Some of its stand out features are:
 
 * Support for :ref:`sync and async <SyncAndAsync>`.
 * A builtin :ref:`playground <Playground>`, which makes learning a breeze.

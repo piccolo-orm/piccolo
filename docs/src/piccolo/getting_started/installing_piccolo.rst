@@ -37,7 +37,7 @@ Now install Piccolo, ideally inside a `virtualenv <https://docs.python-guide.org
     # event loop if installed
     pip install 'piccolo[uvloop]'
 
-    # If you just want Piccolo with all of it's functionality, you might prefer
+    # If you just want Piccolo with all of its functionality, you might prefer
     # to use this:
     pip install 'piccolo[all]'
 

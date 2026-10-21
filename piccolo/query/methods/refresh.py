@@ -197,7 +197,7 @@ class Refresh:
 
     def __await__(self):
         """
-        If the user doesn't explicity call :meth:`run`, proxy to it as a
+        If the user doesn't explicitly call :meth:`run`, proxy to it as a
         convenience.
         """
         return self.run().__await__()

@@ -10,7 +10,7 @@ You can use ``distinct`` clauses with the following queries:
 .. code-block:: python
 
     >>> await Band.select(Band.name).distinct()
-    [{'title': 'Pythonistas'}]
+    [{'name': 'Pythonistas'}]
 
 This is equivalent to ``SELECT DISTINCT name FROM band`` in SQL.
 

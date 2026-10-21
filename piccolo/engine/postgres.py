@@ -90,7 +90,7 @@ class AsyncBatch(BaseBatch):
 
 class Atomic(BaseAtomic):
     """
-    This is useful if you want to build up a transaction programatically, by
+    This is useful if you want to build up a transaction programmatically, by
     adding queries to it.
 
     Usage::

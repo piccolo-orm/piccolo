@@ -327,7 +327,7 @@ class Table(metaclass=TableMetaclass):
                 column._meta._name = attribute_name
 
                 # We have to copy, then override the existing column
-                # definition, in case this column is inheritted from a mixin.
+                # definition, in case this column is inherited from a mixin.
                 # Otherwise, when we set attributes on that column, it will
                 # effect all other users of that mixin.
                 column = column.copy()
@@ -502,7 +502,7 @@ class Table(metaclass=TableMetaclass):
         cls: type[TableInstance], data: dict[str, Any]
     ) -> TableInstance:
         """
-        Used when loading fixtures. It can be overriden by subclasses in case
+        Used when loading fixtures. It can be overridden by subclasses in case
         they have specific logic / validation which needs running when loading
         fixtures.
         """
@@ -589,7 +589,7 @@ class Table(metaclass=TableMetaclass):
             >>> await band.save()
 
         The problem with this, is what if another object has already
-        incremented ``popularity``? It would overide the value.
+        incremented ``popularity``? It would override the value.
 
         Instead we can do this:
 

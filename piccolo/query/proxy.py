@@ -34,7 +34,7 @@ class Proxy(Generic[QueryType, ResponseType]):
         self,
     ) -> Generator[None, None, ResponseType]:
         """
-        If the user doesn't explicity call .run(), proxy to it as a
+        If the user doesn't explicitly call .run(), proxy to it as a
         convenience.
         """
         return self.run().__await__()

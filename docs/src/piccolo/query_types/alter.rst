@@ -78,10 +78,10 @@ Set whether a column is nullable or not.
 
 .. code-block:: python
 
-    # To make a row nullable:
+    # To make a column nullable:
     await Band.alter().set_null(Band.name, True)
 
-    # To stop a row being nullable:
+    # To stop a column being nullable:
     await Band.alter().set_null(Band.name, False)
 
 -------------------------------------------------------------------------------
@@ -116,8 +116,8 @@ Used to change whether a column is unique or not.
 
 .. code-block:: python
 
-    # To make a row unique:
+    # To make a column unique:
     await Band.alter().set_unique(Band.name, True)
 
-    # To stop a row being unique:
+    # To stop a column being unique:
     await Band.alter().set_unique(Band.name, False)

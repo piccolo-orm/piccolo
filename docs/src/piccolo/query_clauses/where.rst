@@ -83,7 +83,7 @@ The percentage operator is required to designate where the match should occur.
 ``not_like``
 ------------
 
-Usage is the same as ``like`` excepts it excludes matching rows.
+Usage is the same as ``like`` except it excludes matching rows.
 
 .. code-block:: python
 

@@ -53,7 +53,7 @@ Alternatively, you can use this abbreviated syntax:
     >>> await Band.objects().get(Band.name == 'Pythonistas')
     <Band: 1>
 
-You'll notice that the API is similar to :ref:`Select` (expect with ``select``
+You'll notice that the API is similar to :ref:`Select` (except with ``select``
 you can specify which columns are returned).
 
 -------------------------------------------------------------------------------
@@ -265,7 +265,7 @@ You can find out if an existing row was found, or if a new row was created:
 
 .. code-block:: python
 
-    band = await Band.objects.get_or_create(
+    band = await Band.objects().get_or_create(
         Band.name == 'Pythonistas'
     )
     band._was_created  # True if it was created, otherwise False if it was already in the db

@@ -40,7 +40,7 @@ Or use an alias to make it shorter:
 as_alias
 --------
 
-By using ``as_alias``, the name of the row can be overriden in the response.
+By using ``as_alias``, the name of the column can be overridden in the response.
 
 .. code-block:: python
 
@@ -54,7 +54,7 @@ This is equivalent to ``SELECT name AS title FROM band`` in SQL.
 Joins
 -----
 
-One of the most powerful things about ``select`` is it's support for joins.
+One of the most powerful things about ``select`` is its support for joins.
 
 .. code-block:: python
 
@@ -147,7 +147,7 @@ You can also get the response as nested dictionaries, which can be very useful:
     >>> await Band.select(Band.name, Band.manager.all_columns()).output(nested=True)
     [
         {'name': 'Pythonistas', 'manager': {'id': 1, 'name': 'Guido'}},
-        {'name': 'Rustaceans', 'manager': {'id': 2, 'manager.name': 'Graydon'}}
+        {'name': 'Rustaceans', 'manager': {'id': 2, 'name': 'Graydon'}}
     ]
 
 -------------------------------------------------------------------------------
@@ -179,7 +179,7 @@ convert values to uppercase:
 
     from piccolo.query.functions.string import Upper
 
-    >> await Band.select(Upper(Band.name, alias='name'))
+    >>> await Band.select(Upper(Band.name, alias='name'))
     [{'name': 'PYTHONISTAS'}, ...]
 
 You can also use these within where clauses:
@@ -188,7 +188,7 @@ You can also use these within where clauses:
 
     from piccolo.query.functions.string import Upper
 
-    >> await Band.select(Band.name).where(Upper(Band.manager.name) == 'GUIDO')
+    >>> await Band.select(Band.name).where(Upper(Band.manager.name) == 'GUIDO')
     [{'name': 'Pythonistas'}]
 
 -------------------------------------------------------------------------------
@@ -212,7 +212,7 @@ Returns the number of matching rows.
 
     from piccolo.query.functions.aggregate import Count
 
-    >> await Band.select(Count()).where(Band.popularity > 100)
+    >>> await Band.select(Count()).where(Band.popularity > 100)
     [{'count': 3}]
 
 To find out more about the options available, see :class:`Count <piccolo.query.methods.select.Count>`.

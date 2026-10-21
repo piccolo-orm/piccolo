@@ -74,7 +74,7 @@ The :ref:`Piccolo Admin<PiccoloAdmin>` uses these attributes to control who
 can login and what they can do.
 
 * **active** and **admin** - must be true for a user to be able to login.
-* **superuser** - must be true for a user to be able to change other user's
+* **superuser** - must be true for a user to be able to change other users'
   passwords.
 
 -------------------------------------------------------------------------------
