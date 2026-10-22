@@ -1,6 +1,52 @@
 Changes
 =======
 
+1.38.0
+------
+
+``Case`` / ``When``
+~~~~~~~~~~~~~~~~~~~
+
+Added the ``Case`` and ``When`` functions, which are the SQL equivalent of an
+``if / elif / else`` block:
+
+.. code-block:: python
+
+  >>> from piccolo.query.functions import Case, When
+
+  >>> await Band.select(
+  ...     Band.name,
+  ...     Case(
+  ...         When(Band.popularity > 900, then='super popular'),
+  ...         When(Band.popularity > 500, then='popular'),
+  ...         default='not popular',
+  ...         alias='popularity_label',
+  ...     ),
+  ... )
+  [
+      {'name': 'Pythonistas', 'popularity_label': 'super popular'},
+      {'name': 'Rustaceans', 'popularity_label': 'not popular'},
+      {'name': 'C-Sharps', 'popularity_label': 'popular'}
+  ]
+
+Thanks to @regiscamimura for adding this.
+
+Other changes
+~~~~~~~~~~~~~
+
+* Auto migrations now support changing the base column type of an ``Array``
+  column (thanks to @sinisaos for this).
+* Fixed a bug with auto migrations when adding or dropping a column which uses
+  ``db_column_name`` (thanks to @atkei for this).
+* Fixed a bug with auto migrations, where renaming a table didn't update the
+  ``ForeignKey`` columns which reference it (thanks to @regiscamimura for
+  this).
+* Subclasses of Piccolo's ``Default`` classes can now be used as column
+  defaults (thanks to @Bobronium for this).
+* Fixed typos in the docs.
+
+-------------------------------------------------------------------------------
+
 1.37.0
 ------
 
