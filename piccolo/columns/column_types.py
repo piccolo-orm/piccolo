@@ -2703,7 +2703,7 @@ class Array(Column):
             return (
                 f"ARRAY_{inner_column.column_type}"
                 if isinstance(
-                    inner_column, (Date, Timestamp, Timestamptz, Time)
+                    inner_column, (Date, Timestamp, Timestamptz, Time, Numeric)
                 )
                 else "ARRAY"
             )
