@@ -274,6 +274,9 @@ def convert_complex_array_out(value: bytes, converter: Callable):
                 output.append(convert_list(value))
             elif isinstance(value, str):
                 output.append(converter(value))
+            elif isinstance(value, (int, float)):
+                # Decimal values are stored as JSON numbers.
+                output.append(converter(str(value)))
             else:
                 output.append(value)
 
