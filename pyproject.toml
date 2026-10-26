@@ -17,7 +17,8 @@ module = [
     "jinja2",
     "orjson",
     "aiosqlite",
-    "uvicorn"
+    "uvicorn",
+    "testcontainers.*"
 ]
 ignore_missing_imports = true
 
