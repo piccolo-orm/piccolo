@@ -23,7 +23,7 @@ from piccolo.columns.choices import Choice
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.defaults.interval import IntervalCustom
-from piccolo.columns.generated import Generated
+from piccolo.columns.generated import Generated, Identity
 from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.operators.comparison import (
     ComparisonOperator,
@@ -482,6 +482,8 @@ class Column(Selectable):
 
     value_type: type = int
     default: Any
+    # Set by columns which support the ``generated`` argument.
+    generated: Optional[Generated] = None
 
     def __init__(
         self,
@@ -1016,11 +1018,21 @@ class Column(Selectable):
                 f" ON UPDATE {on_update}"
             )
 
-        generated = cast(
-            Optional[Generated],
-            getattr(self, "generated", None),
-        )
+        generated = self.generated
         if generated is not None:
+            # SQLite has no identity columns - an `INTEGER PRIMARY KEY`
+            # autoincrements, but other columns have nothing to generate the
+            # value.
+            if (
+                isinstance(generated, Identity)
+                and self._meta.engine_type == "sqlite"
+                and not self._meta.primary_key
+            ):
+                raise ValueError(
+                    f"`{self._meta.name}` - SQLite only supports identity "
+                    "columns for primary keys."
+                )
+
             generated_sql = getattr(generated, self._meta.engine_type)
             if generated_sql:
                 query += f" {generated_sql}"

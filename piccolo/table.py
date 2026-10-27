@@ -20,7 +20,6 @@ from piccolo.columns.column_types import (
     Serial,
 )
 from piccolo.columns.defaults.base import Default
-from piccolo.columns.generated import Generated
 from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.m2m import (
     M2M,
@@ -364,9 +363,7 @@ class Table(metaclass=TableMetaclass):
                 if column._meta.auto_update is not ...:
                     auto_update_columns.append(column)
 
-                generated = cast(
-                    Optional[Generated], getattr(column, "generated", None)
-                )
+                generated = column.generated
                 if generated is not None and not generated.writable:
                     read_only_columns.append(column)
 
