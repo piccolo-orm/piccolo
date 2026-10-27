@@ -33,7 +33,8 @@ Primary Key
 UUID
 ~~~~
 
-To specify a ``UUID`` primary key column, do the following:
+To specify a :class:`UUID <piccolo.columns.column_types.UUID>` primary key
+column, do the following:
 
 .. code-block:: python
 
@@ -49,7 +50,8 @@ To specify a ``UUID`` primary key column, do the following:
 Identity
 ~~~~~~~~
 
-To specify an identity column as the primary key, do the following:
+To specify an :ref:`identity column<IdentityColumns>` as the primary key,
+do the following:
 
 .. code-block:: python
 
@@ -64,15 +66,14 @@ To specify an identity column as the primary key, do the following:
         name = Varchar(length=100)
 
 .. hint::
-    This is the recommended alternative to ``Serial`` in Postgres
-    (see :ref:`IdentityColumns`).
+    This is the recommended alternative to ``Serial`` in Postgres.
 
 Serial / BigSerial
 ~~~~~~~~~~~~~~~~~~
 
-To specify a ``Serial`` / ``BigSerial`` column as the primary key, do the
-following:
-
+To specify a :class:`Serial <piccolo.columns.column_types.Serial>` /
+:class:`BigSerial <piccolo.columns.column_types.BigSerial>` column as the
+primary key, do the following:
 
 .. code-block:: python
 
