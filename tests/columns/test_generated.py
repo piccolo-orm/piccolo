@@ -136,3 +136,37 @@ class TestIdentityColumn(TableTest):
             "from piccolo.columns.generated import Identity",
             [repr(i) for i in serialised.extra_imports],
         )
+
+
+class TicketIdentity(Table):
+    name = Varchar()
+    serial_number = Integer(generated=Identity())
+
+
+class TestIdentitySave(TableTest):
+    """
+    ``save`` shouldn't try writing to ``GENERATED ALWAYS`` columns, as the
+    database rejects it.
+    """
+
+    tables = [TicketIdentity]
+
+    @engines_only("postgres", "cockroach")
+    def test_save(self):
+        TicketIdentity(name="Front row").save().run_sync()
+
+        # Load it from the database, so `serial_number` has a real value.
+        ticket = TicketIdentity.objects().first().run_sync()
+        assert ticket is not None
+
+        ticket.name = "Back row"
+        ticket.save().run_sync()
+
+        self.assertEqual(
+            TicketIdentity.select(TicketIdentity.name).run_sync(),
+            [{"name": "Back row"}],
+        )
+
+    def test_writable(self):
+        self.assertFalse(Identity().writable)
+        self.assertTrue(Identity(always=False).writable)

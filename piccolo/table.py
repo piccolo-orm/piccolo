@@ -527,7 +527,8 @@ class Table(metaclass=TableMetaclass):
                 await band.save(columns=[Band.popularity])
 
             If ``columns=None`` (the default) then all columns will be synced
-            back to the database.
+            back to the database, except for any which the database generates
+            the values for.
 
         """
         cls = self.__class__
@@ -539,7 +540,13 @@ class Table(metaclass=TableMetaclass):
         # Pre-existing row - update
         if columns is None:
             column_instances = [
-                i for i in cls._meta.columns if not i._meta.primary_key
+                i
+                for i in cls._meta.columns
+                if not i._meta.primary_key
+                and not (
+                    (generated := getattr(i, "generated", None))
+                    and not generated.writable
+                )
             ]
         else:
             column_instances = [
