@@ -56,7 +56,8 @@ class Identity(Generated):
     ):
         """
         Makes an integer column an identity column, which is the recommended
-        alternative to ``SERIAL`` in Postgres.
+        alternative to ``SERIAL`` in Postgres
+        (`see docs <https://www.postgresql.org/docs/current/ddl-identity-columns.html>`_).
 
         .. code-block:: python
 
@@ -74,7 +75,7 @@ class Identity(Generated):
         :param increment:
             How much the sequence goes up by each time.
 
-        """
+        """  # noqa: E501
         if start is not None and not isinstance(start, int):
             raise ValueError("`start` must be an integer.")
 

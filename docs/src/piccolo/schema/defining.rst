@@ -30,11 +30,10 @@ For a full list of columns, see :ref:`column types <ColumnTypes>`.
 Primary Key
 -----------
 
-Piccolo tables are automatically given a primary key column called ``id``,
-which is an auto incrementing integer (a ``Serial(primary_key=True)`` column).
+UUID
+~~~~
 
-There is currently experimental support for specifying a custom primary key
-column. For example:
+To specify a ``UUID`` primary key column, do the following:
 
 .. code-block:: python
 
@@ -47,8 +46,10 @@ column. For example:
         id = UUID(primary_key=True)
         name = Varchar(length=100)
 
-Or to use an identity column, which is the recommended alternative to
-``Serial`` in Postgres (see :ref:`IdentityColumns`):
+Identity
+~~~~~~~~
+
+To specify an identity column as the primary key, do the following:
 
 .. code-block:: python
 
@@ -61,6 +62,40 @@ Or to use an identity column, which is the recommended alternative to
     class Band(Table):
         id = BigInt(primary_key=True, generated=Identity())
         name = Varchar(length=100)
+
+.. hint::
+    This is the recommended alternative to ``Serial`` in Postgres
+    (see :ref:`IdentityColumns`).
+
+Serial / BigSerial
+~~~~~~~~~~~~~~~~~~
+
+To specify a ``Serial`` / ``BigSerial`` column as the primary key, do the
+following:
+
+
+.. code-block:: python
+
+    # tables.py
+    from piccolo.table import Table
+    from piccolo.columns import BigSerial, Varchar
+
+
+    class Band(Table):
+        id = BigSerial(primary_key=True)
+        name = Varchar(length=100)
+
+.. hint::
+    Even though identity columns are recommended instead of
+    ``Serial`` / ``BigSerial`` for Postgres, these still work fine - the differences are
+    fairly minor.
+
+Default
+~~~~~~~
+
+If no primary key is specified, then Piccolo tables are automatically given one
+called ``id``, which is an auto incrementing integer
+(a ``Serial(primary_key=True)`` column).
 
 -------------------------------------------------------------------------------
 
