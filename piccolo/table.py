@@ -20,6 +20,7 @@ from piccolo.columns.column_types import (
     Serial,
 )
 from piccolo.columns.defaults.base import Default
+from piccolo.columns.generated import Generated
 from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.m2m import (
     M2M,
@@ -87,6 +88,8 @@ class TableMeta:
     secret_columns: list[Column] = field(default_factory=list)
     constraints: list[Constraint] = field(default_factory=list)
     auto_update_columns: list[Column] = field(default_factory=list)
+    # Columns which the database won't let us write values to.
+    read_only_columns: list[Column] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     help_text: Optional[str] = None
     _db: Optional[Engine] = None
@@ -308,6 +311,7 @@ class Table(metaclass=TableMetaclass):
         json_columns: list[Union[JSON, JSONB]] = []
         email_columns: list[Email] = []
         auto_update_columns: list[Column] = []
+        read_only_columns: list[Column] = []
         primary_key: Optional[Column] = None
         m2m_relationships: list[M2M] = []
         constaints: list[Constraint] = []
@@ -360,6 +364,12 @@ class Table(metaclass=TableMetaclass):
                 if column._meta.auto_update is not ...:
                     auto_update_columns.append(column)
 
+                generated = cast(
+                    Optional[Generated], getattr(column, "generated", None)
+                )
+                if generated is not None and not generated.writable:
+                    read_only_columns.append(column)
+
             if isinstance(attribute, M2M):
                 attribute._meta._name = attribute_name
                 attribute._meta._table = cls
@@ -388,6 +398,7 @@ class Table(metaclass=TableMetaclass):
             json_columns=json_columns,
             secret_columns=secret_columns,
             auto_update_columns=auto_update_columns,
+            read_only_columns=read_only_columns,
             tags=tags,
             help_text=help_text,
             _db=db,
@@ -539,14 +550,15 @@ class Table(metaclass=TableMetaclass):
 
         # Pre-existing row - update
         if columns is None:
+            # Compare by name, as `Column.__eq__` returns a `Where`.
+            read_only_column_names = {
+                i._meta.name for i in cls._meta.read_only_columns
+            }
             column_instances = [
                 i
                 for i in cls._meta.columns
                 if not i._meta.primary_key
-                and not (
-                    (generated := getattr(i, "generated", None))
-                    and not generated.writable
-                )
+                and i._meta.name not in read_only_column_names
             ]
         else:
             column_instances = [
