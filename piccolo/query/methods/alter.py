@@ -119,6 +119,36 @@ class AddIdentity(AlterColumnStatement):
 
 
 @dataclass
+class SetIdentity(AlterColumnStatement):
+    """
+    Change the options of an existing identity column. Any options which are
+    ``None`` are left unchanged.
+    """
+
+    __slots__ = ("always", "start", "increment", "restart")
+
+    always: Optional[bool]
+    start: Optional[int]
+    increment: Optional[int]
+    restart: bool
+
+    @property
+    def ddl(self) -> str:
+        options = []
+        if self.always is not None:
+            mode = "ALWAYS" if self.always else "BY DEFAULT"
+            options.append(f"SET GENERATED {mode}")
+        if self.start is not None:
+            options.append(f"SET START WITH {self.start}")
+        if self.increment is not None:
+            options.append(f"SET INCREMENT BY {self.increment}")
+        if self.restart:
+            options.append("RESTART")
+
+        return f'ALTER COLUMN "{self.column_name}" {" ".join(options)}'
+
+
+@dataclass
 class DropIdentity(AlterColumnStatement):
     @property
     def ddl(self) -> str:
@@ -334,6 +364,7 @@ class Alter(DDL):
         "_set_column_type",
         "_set_default",
         "_set_digits",
+        "_set_identity",
         "_set_length",
         "_set_null",
         "_set_schema",
@@ -358,6 +389,7 @@ class Alter(DDL):
         self._set_column_type: list[SetColumnType] = []
         self._set_default: list[SetDefault] = []
         self._set_digits: list[SetDigits] = []
+        self._set_identity: list[SetIdentity] = []
         self._set_length: list[SetLength] = []
         self._set_null: list[SetNull] = []
         self._set_schema: list[SetSchema] = []
@@ -412,6 +444,43 @@ class Alter(DDL):
         """
         self._add_identity.append(
             AddIdentity(column=column, identity=identity)
+        )
+        return self
+
+    def set_identity(
+        self,
+        column: Union[str, Column],
+        always: Optional[bool] = None,
+        start: Optional[int] = None,
+        increment: Optional[int] = None,
+        restart: bool = False,
+    ) -> Alter:
+        """
+        Change the options of an existing identity column. Any options which
+        are ``None`` are left unchanged::
+
+            >>> await Band.alter().set_identity(Band.id, always=False)
+
+        :param restart:
+            If ``True``, the next value generated is ``start``.
+
+        """
+        if (
+            always is None
+            and start is None
+            and increment is None
+            and not restart
+        ):
+            raise ValueError("No identity options were specified.")
+
+        self._set_identity.append(
+            SetIdentity(
+                column=column,
+                always=always,
+                start=start,
+                increment=increment,
+                restart=restart,
+            )
         )
         return self
 
@@ -716,6 +785,7 @@ class Alter(DDL):
                 self._set_length,
                 self._set_default,
                 self._add_identity,
+                self._set_identity,
                 self._set_digits,
                 self._set_schema,
                 self._add_constraint,

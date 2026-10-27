@@ -500,3 +500,40 @@ class TestIdentity(TestCase):
                 "IF EXISTS"
             ],
         )
+
+        query = Concert.alter().set_identity(
+            column="capacity",
+            always=False,
+            start=10,
+            increment=2,
+            restart=True,
+        )
+        self.assertEqual(
+            query.ddl,
+            [
+                'ALTER TABLE "concert" ALTER COLUMN "capacity" SET GENERATED '
+                "BY DEFAULT SET START WITH 10 SET INCREMENT BY 2 RESTART"
+            ],
+        )
+
+    def test_set_identity_no_options(self):
+        with self.assertRaises(ValueError):
+            Concert.alter().set_identity(column="capacity")
+
+    @engines_only("postgres")
+    def test_set_identity(self):
+        Concert.alter().add_identity(
+            column=Concert.capacity, identity=Identity()
+        ).run_sync()
+        Concert.alter().set_identity(
+            column=Concert.capacity, always=False
+        ).run_sync()
+
+        response = Concert.raw("""
+            SELECT identity_generation
+            FROM information_schema.columns
+            WHERE table_name = 'concert'
+            AND table_catalog = 'piccolo'
+            AND column_name = 'capacity'
+            """).run_sync()
+        self.assertEqual(response[0], {"identity_generation": "BY DEFAULT"})

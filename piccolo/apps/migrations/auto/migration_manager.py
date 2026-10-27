@@ -848,7 +848,7 @@ class MigrationManager:
         backwards: bool,
     ):
         """
-        Add or remove an identity from an existing column.
+        Add, change, or remove an identity on an existing column.
         """
         # The column as it will be once this migration has run.
         existing_table = await self.get_table_from_snapshot(
@@ -875,6 +875,23 @@ class MigrationManager:
                 f"`{column_name}` - SQLite doesn't support adding or "
                 "removing identity columns."
             )
+
+        if isinstance(old_generated, Identity) and isinstance(
+            generated, Identity
+        ):
+            old_increment = old_generated.increment or 1
+            new_increment = generated.increment or 1
+
+            # If the sequence changes direction, its min and max values are
+            # wrong, so we recreate it below instead.
+            if (old_increment > 0) == (new_increment > 0):
+                await self._set_identity(
+                    _Table=_Table,
+                    db_column_name=db_column_name,
+                    identity=generated,
+                    old_identity=old_generated,
+                )
+                return
 
         if isinstance(old_generated, Identity):
             # Postgres won't let us set a default on an identity column, so
@@ -914,6 +931,52 @@ class MigrationManager:
                 await self._run_query(
                     _Table.alter().set_default(column=column, value=default)
                 )
+
+    async def _set_identity(
+        self,
+        _Table: type[Table],
+        db_column_name: str,
+        identity: Identity,
+        old_identity: Identity,
+    ):
+        """
+        Change the options of an existing identity column in place, so the
+        sequence keeps its current value.
+        """
+        increment = identity.increment or 1
+
+        always = (
+            identity.always if identity.always != old_identity.always else None
+        )
+        new_increment = (
+            increment if identity.increment != old_identity.increment else None
+        )
+
+        start = None
+        restart = False
+        if identity.start != old_identity.start:
+            if identity.start is None:
+                # Go back to the Postgres default. The sequence carries on
+                # from its current value.
+                start = 1 if increment > 0 else -1
+            else:
+                # The user has chosen where the sequence starts, so move it
+                # there - the same as when adding an identity.
+                start = identity.start
+                restart = True
+
+        if always is None and start is None and new_increment is None:
+            return
+
+        await self._run_query(
+            _Table.alter().set_identity(
+                column=db_column_name,
+                always=always,
+                start=start,
+                increment=new_increment,
+                restart=restart,
+            )
+        )
 
     async def _run_drop_tables(self, backwards=False):
         for diffable_table in self.drop_tables:

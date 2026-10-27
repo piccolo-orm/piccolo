@@ -1846,6 +1846,59 @@ class TestIdentityMigrations(MigrationTestCase):
             },
         )
 
+    def test_change_always(self, get_app_config: MagicMock):
+        """
+        Changing the options shouldn't reset the sequence, even if the rows
+        it generated have since been deleted.
+        """
+        get_app_config.return_value = self.app_config
+
+        self._migrate(Integer(generated=Identity()))
+        self._insert_default_row()
+        self._insert_default_row()
+        self.run_sync("DELETE FROM my_table")
+        self._migrate(Integer(generated=Identity(always=False)))
+
+        self.assertEqual(
+            self._get_column_info()["identity_generation"], "BY DEFAULT"
+        )
+        self.assertEqual(self._insert_default_row(), 3)
+
+    def test_change_increment(self, get_app_config: MagicMock):
+        get_app_config.return_value = self.app_config
+
+        self._migrate(Integer(generated=Identity()))
+        self._insert_default_row()
+        self._migrate(Integer(generated=Identity(increment=10)))
+
+        self.assertEqual(self._insert_default_row(), 11)
+
+    def test_change_start(self, get_app_config: MagicMock):
+        """
+        If the user chose a new start, the sequence should restart there.
+        Removing the start shouldn't move the sequence.
+        """
+        get_app_config.return_value = self.app_config
+
+        self._migrate(Integer(generated=Identity()))
+        self._insert_default_row()
+        self._migrate(Integer(generated=Identity(start=100)))
+        self.assertEqual(self._insert_default_row(), 100)
+
+        self._migrate(Integer(generated=Identity()))
+        self.assertEqual(self._insert_default_row(), 101)
+
+    def test_change_direction(self, get_app_config: MagicMock):
+        """
+        A sequence which changes direction is recreated.
+        """
+        get_app_config.return_value = self.app_config
+
+        self._migrate(Integer(generated=Identity()))
+        self._migrate(Integer(generated=Identity(increment=-1)))
+
+        self.assertEqual(self._insert_default_row(), -1)
+
     def test_backwards(self, get_app_config: MagicMock):
         get_app_config.return_value = self.app_config
 
@@ -1862,3 +1915,16 @@ class TestIdentityMigrations(MigrationTestCase):
                 "column_default": "0",
             },
         )
+
+    def test_change_backwards(self, get_app_config: MagicMock):
+        get_app_config.return_value = self.app_config
+
+        self._migrate(Integer(generated=Identity()))
+        self._insert_default_row()
+        self._migrate(Integer(generated=Identity(always=False)))
+
+        self._run_backwards(migration_id="1")
+        self.assertEqual(
+            self._get_column_info()["identity_generation"], "ALWAYS"
+        )
+        self.assertEqual(self._insert_default_row(), 2)
