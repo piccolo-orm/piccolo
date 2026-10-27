@@ -56,6 +56,7 @@ from piccolo.columns.defaults import (
     NegativeInfinityFloat,
 )
 from piccolo.columns.defaults.uuid import UUID4
+from piccolo.columns.generated import Identity
 from piccolo.columns.m2m import M2M
 from piccolo.columns.reference import LazyTableReference
 from piccolo.conf.apps import AppConfig
@@ -1725,4 +1726,139 @@ class TestRenameTable(MigrationTestCase):
                     new_tablename="manager_1",
                 )
             ],
+        )
+
+
+@engines_only("postgres")
+@patch("piccolo.conf.apps.Finder.get_app_config")
+class TestIdentityMigrations(MigrationTestCase):
+    """
+    Adding and removing ``generated=Identity()`` on an existing column.
+    """
+
+    def setUp(self):
+        self.app_config = self._get_app_config()
+        migrations_folder_path = (
+            self.app_config.resolved_migrations_folder_path
+        )
+        if os.path.exists(migrations_folder_path):
+            shutil.rmtree(migrations_folder_path)
+        _create_migrations_folder(migrations_folder_path)
+
+    def tearDown(self):
+        create_table_class("MyTable").alter().drop_table(
+            if_exists=True
+        ).run_sync()
+        Migration.alter().drop_table(if_exists=True).run_sync()
+
+    def _migrate(self, column: Column):
+        """
+        Create and run a migration, so ``MyTable.my_column`` matches
+        ``column``.
+        """
+        self.app_config.table_classes = [
+            create_table_class(
+                class_name="MyTable", class_members={"my_column": column}
+            )
+        ]
+        run_sync(
+            _create_new_migration(
+                app_config=self.app_config, auto=True, auto_input="y"
+            )
+        )
+        self._run_migrations(app_config=self.app_config)
+        time.sleep(1e-6)
+
+    def _get_column_info(self) -> dict:
+        return self.run_sync("""
+            SELECT is_identity, identity_generation, column_default
+            FROM information_schema.columns
+            WHERE table_name = 'my_table' AND column_name = 'my_column'
+            """)[0]
+
+    def _insert_rows(self, *values: int):
+        for value in values:
+            self.run_sync(f"INSERT INTO my_table (my_column) VALUES ({value})")
+
+    def _insert_default_row(self) -> int:
+        return self.run_sync(
+            "INSERT INTO my_table DEFAULT VALUES RETURNING my_column"
+        )[0]["my_column"]
+
+    def test_add_identity(self, get_app_config: MagicMock):
+        """
+        The sequence should continue from the existing values.
+        """
+        get_app_config.return_value = self.app_config
+
+        self._migrate(Integer())
+        self._insert_rows(1, 2, 5)
+        self._migrate(Integer(generated=Identity()))
+
+        self.assertEqual(
+            self._get_column_info(),
+            {
+                "is_identity": "YES",
+                "identity_generation": "ALWAYS",
+                "column_default": None,
+            },
+        )
+        self.assertEqual(self._insert_default_row(), 6)
+
+    def test_add_identity_start(self, get_app_config: MagicMock):
+        """
+        If the user chose where the sequence starts, use that.
+        """
+        get_app_config.return_value = self.app_config
+
+        self._migrate(Integer())
+        self._insert_rows(1, 2, 5)
+        self._migrate(Integer(generated=Identity(start=100)))
+
+        self.assertEqual(self._insert_default_row(), 100)
+
+    def test_add_identity_empty_table(self, get_app_config: MagicMock):
+        get_app_config.return_value = self.app_config
+
+        self._migrate(Integer())
+        self._migrate(Integer(generated=Identity(always=False)))
+
+        self.assertEqual(
+            self._get_column_info()["identity_generation"], "BY DEFAULT"
+        )
+        self.assertEqual(self._insert_default_row(), 1)
+
+    def test_remove_identity(self, get_app_config: MagicMock):
+        """
+        The column's normal default should be restored.
+        """
+        get_app_config.return_value = self.app_config
+
+        self._migrate(Integer(generated=Identity()))
+        self._migrate(Integer())
+
+        self.assertEqual(
+            self._get_column_info(),
+            {
+                "is_identity": "NO",
+                "identity_generation": None,
+                "column_default": "0",
+            },
+        )
+
+    def test_backwards(self, get_app_config: MagicMock):
+        get_app_config.return_value = self.app_config
+
+        self._migrate(Integer())
+        self._insert_rows(1, 2)
+        self._migrate(Integer(generated=Identity()))
+
+        self._run_backwards(migration_id="1")
+        self.assertEqual(
+            self._get_column_info(),
+            {
+                "is_identity": "NO",
+                "identity_generation": None,
+                "column_default": "0",
+            },
         )

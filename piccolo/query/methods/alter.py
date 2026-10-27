@@ -13,6 +13,7 @@ from piccolo.utils.warnings import Level, colored_warning
 
 if TYPE_CHECKING:  # pragma: no cover
     from piccolo.columns.base import OnDelete, OnUpdate
+    from piccolo.columns.generated import Identity
     from piccolo.table import Table
 
 
@@ -102,6 +103,26 @@ class DropDefault(AlterColumnStatement):
     @property
     def ddl(self) -> str:
         return f'ALTER COLUMN "{self.column_name}" DROP DEFAULT'
+
+
+@dataclass
+class AddIdentity(AlterColumnStatement):
+    __slots__ = ("identity",)
+
+    identity: Identity
+
+    @property
+    def ddl(self) -> str:
+        return (
+            f'ALTER COLUMN "{self.column_name}" ADD {self.identity.postgres}'
+        )
+
+
+@dataclass
+class DropIdentity(AlterColumnStatement):
+    @property
+    def ddl(self) -> str:
+        return f'ALTER COLUMN "{self.column_name}" DROP IDENTITY IF EXISTS'
 
 
 @dataclass
@@ -302,8 +323,10 @@ class Alter(DDL):
         "_add",
         "_add_constraint",
         "_add_foreign_key_constraint",
+        "_add_identity",
         "_drop_constraint",
         "_drop_default",
+        "_drop_identity",
         "_drop_table",
         "_drop",
         "_rename_columns",
@@ -323,8 +346,10 @@ class Alter(DDL):
         self._add_constraint: list[AddConstraint] = []
         self._add_foreign_key_constraint: list[AddForeignKeyConstraint] = []
         self._add: list[AddColumn] = []
+        self._add_identity: list[AddIdentity] = []
         self._drop_constraint: list[DropConstraint] = []
         self._drop_default: list[DropDefault] = []
+        self._drop_identity: list[DropIdentity] = []
         self._drop_table: Optional[DropTable] = None
         self._drop: list[DropColumn] = []
         self._rename_columns: list[RenameColumn] = []
@@ -372,6 +397,32 @@ class Alter(DDL):
 
         """
         self._drop_default.append(DropDefault(column=column))
+        return self
+
+    def add_identity(
+        self, column: Union[str, Column], identity: Identity
+    ) -> Alter:
+        """
+        Make an existing integer column an identity column. The column
+        mustn't have a default::
+
+            >>> from piccolo.columns.generated import Identity
+            >>> await Band.alter().add_identity(Band.id, Identity())
+
+        """
+        self._add_identity.append(
+            AddIdentity(column=column, identity=identity)
+        )
+        return self
+
+    def drop_identity(self, column: Union[str, Column]) -> Alter:
+        """
+        Stop a column being an identity column::
+
+            >>> await Band.alter().drop_identity(Band.id)
+
+        """
+        self._drop_identity.append(DropIdentity(column=column))
         return self
 
     def drop_table(
@@ -658,11 +709,13 @@ class Alter(DDL):
                 self._drop,
                 self._drop_constraint,
                 self._drop_default,
+                self._drop_identity,
                 self._set_column_type,
                 self._set_unique,
                 self._set_null,
                 self._set_length,
                 self._set_default,
+                self._add_identity,
                 self._set_digits,
                 self._set_schema,
                 self._add_constraint,
