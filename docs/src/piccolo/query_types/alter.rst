@@ -20,6 +20,21 @@ Used to add a column to an existing table.
 
 -------------------------------------------------------------------------------
 
+add_identity
+------------
+
+Used to make an existing integer column an identity column (see
+:ref:`IdentityColumns`). The column mustn't have a default value.
+
+.. code-block:: python
+
+    from piccolo.columns.generated import Identity
+
+    await Band.alter().drop_default(Band.popularity)
+    await Band.alter().add_identity(Band.popularity, Identity())
+
+-------------------------------------------------------------------------------
+
 drop_column
 -----------
 
@@ -28,6 +43,17 @@ Used to drop an existing column.
 .. code-block:: python
 
     await Band.alter().drop_column('popularity')
+
+-------------------------------------------------------------------------------
+
+drop_identity
+-------------
+
+Used to stop a column being an identity column.
+
+.. code-block:: python
+
+    await Band.alter().drop_identity(Band.popularity)
 
 -------------------------------------------------------------------------------
 
@@ -68,6 +94,25 @@ Used to rename an existing column.
 .. code-block:: python
 
     await Band.alter().rename_column(Band.popularity, 'rating')
+
+-------------------------------------------------------------------------------
+
+set_identity
+------------
+
+Used to change the options of an existing identity column. Any options which
+aren't specified are left unchanged.
+
+.. code-block:: python
+
+    # Let users insert their own values:
+    await Band.alter().set_identity(Band.popularity, always=False)
+
+    # Change the increment:
+    await Band.alter().set_identity(Band.popularity, increment=10)
+
+    # Restart the sequence at a new value:
+    await Band.alter().set_identity(Band.popularity, start=1000, restart=True)
 
 -------------------------------------------------------------------------------
 

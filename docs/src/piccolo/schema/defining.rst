@@ -47,6 +47,21 @@ column. For example:
         id = UUID(primary_key=True)
         name = Varchar(length=100)
 
+Or to use an identity column, which is the recommended alternative to
+``Serial`` in Postgres (see :ref:`IdentityColumns`):
+
+.. code-block:: python
+
+    # tables.py
+    from piccolo.table import Table
+    from piccolo.columns import BigInt, Varchar
+    from piccolo.columns.generated import Identity
+
+
+    class Band(Table):
+        id = BigInt(primary_key=True, generated=Identity())
+        name = Varchar(length=100)
+
 -------------------------------------------------------------------------------
 
 Tablename
