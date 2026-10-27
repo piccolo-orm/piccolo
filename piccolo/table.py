@@ -89,6 +89,8 @@ class TableMeta:
     auto_update_columns: list[Column] = field(default_factory=list)
     # Columns which the database won't let us write values to.
     read_only_columns: list[Column] = field(default_factory=list)
+    # Columns which we write values to when inserting rows.
+    insert_columns: list[Column] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     help_text: Optional[str] = None
     _db: Optional[Engine] = None
@@ -383,6 +385,14 @@ class Table(metaclass=TableMetaclass):
             columns.insert(0, primary_key)  # PK should be added first
             default_columns.append(primary_key)
 
+        # Some databases (e.g. CockroachDB) won't even let us insert
+        # `DEFAULT` into read only columns, so leave them out. If that leaves
+        # no columns, keep them all, as we can't insert an empty row.
+        read_only_column_names = {i._meta.name for i in read_only_columns}
+        insert_columns = [
+            i for i in columns if i._meta.name not in read_only_column_names
+        ] or columns
+
         cls._meta = TableMeta(
             tablename=tablename,
             columns=columns,
@@ -396,6 +406,7 @@ class Table(metaclass=TableMetaclass):
             secret_columns=secret_columns,
             auto_update_columns=auto_update_columns,
             read_only_columns=read_only_columns,
+            insert_columns=insert_columns,
             tags=tags,
             help_text=help_text,
             _db=db,
@@ -892,7 +903,7 @@ class Table(metaclass=TableMetaclass):
         """
         args = [
             convert_to_sql_value(value=self[column._meta.name], column=column)
-            for column in self._meta.columns
+            for column in self._meta.insert_columns
         ]
 
         # If unquoted, dump it straight into the query.

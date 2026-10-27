@@ -197,3 +197,12 @@ class TestTableMeta(TestCase):
             [i._meta.name for i in TicketIdentity._meta.read_only_columns],
             ["serial_number"],
         )
+
+    def test_insert_columns(self):
+        """
+        Read only columns are left out of inserts.
+        """
+        self.assertEqual(
+            [i._meta.name for i in TicketIdentity._meta.insert_columns],
+            ["id", "name", "ticket_number"],
+        )
