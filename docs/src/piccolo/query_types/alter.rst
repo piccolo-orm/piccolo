@@ -24,7 +24,7 @@ add_identity
 ------------
 
 Used to make an existing integer column an identity column (see
-:ref:`IdentityColumns`). The column mustn't have a default value.
+:ref:`IdentityColumns`). The column can't have a default value.
 
 .. code-block:: python
 

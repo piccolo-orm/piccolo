@@ -436,7 +436,7 @@ class Alter(DDL):
     ) -> Alter:
         """
         Make an existing integer column an identity column. The column
-        mustn't have a default::
+        can't have a default::
 
             >>> from piccolo.columns.generated import Identity
             >>> await Band.alter().add_identity(Band.id, Identity())
