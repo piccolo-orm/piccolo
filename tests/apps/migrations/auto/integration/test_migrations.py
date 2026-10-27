@@ -63,7 +63,7 @@ from piccolo.conf.apps import AppConfig
 from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_table_class, drop_db_tables_sync
 from piccolo.utils.sync import run_sync
-from tests.base import DBTestCase, engines_only, engines_skip
+from tests.base import DBTestCase, engine_is, engines_only, engines_skip
 
 if TYPE_CHECKING:
     from piccolo.columns.base import Column
@@ -1729,7 +1729,7 @@ class TestRenameTable(MigrationTestCase):
         )
 
 
-@engines_only("postgres")
+@engines_only("postgres", "cockroach")
 @patch("piccolo.conf.apps.Finder.get_app_config")
 class TestIdentityMigrations(MigrationTestCase):
     """
@@ -1770,11 +1770,21 @@ class TestIdentityMigrations(MigrationTestCase):
         time.sleep(1e-6)
 
     def _get_column_info(self) -> dict:
-        return self.run_sync("""
+        info = self.run_sync("""
             SELECT is_identity, identity_generation, column_default
             FROM information_schema.columns
             WHERE table_name = 'my_table' AND column_name = 'my_column'
             """)[0]
+
+        if engine_is("cockroach"):
+            # Cockroach reports these differently to Postgres - an identity
+            # column has a `nextval(...)` default, and other columns have an
+            # empty string instead of `NULL` for `identity_generation`.
+            if info["is_identity"] == "YES":
+                info["column_default"] = None
+            info["identity_generation"] = info["identity_generation"] or None
+
+        return info
 
     def _insert_rows(self, *values: int):
         for value in values:
