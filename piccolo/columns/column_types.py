@@ -634,10 +634,13 @@ class Integer(Column):
     ) -> None:
         self._validate_default(default, (int, None))
 
-        if generated is not None and default not in (0, None):
-            raise ValueError(
-                "A column can't have a `default` and be `generated`."
-            )
+        if generated is not None:
+            if default not in (0, None):
+                raise ValueError(
+                    "A column can't have a `default` and be `generated`."
+                )
+            # The database generates the value, so there's no default.
+            default = None
 
         self.default = default
         self.generated = generated

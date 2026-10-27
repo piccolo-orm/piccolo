@@ -106,6 +106,14 @@ class TestIdentityPrimaryKey(TableTest):
         with self.assertRaises(ValueError):
             Integer(default=1, generated=Identity())
 
+    def test_no_default(self):
+        """
+        Generated columns shouldn't have a default, so it doesn't appear in
+        migrations or ``piccolo schema generate`` output.
+        """
+        self.assertIsNone(BandIdentity.id.default)
+        self.assertIsNone(BandIdentity.id._meta.params["default"])
+
     def test_serialisation(self):
         serialised = serialise_params(params=BandIdentity.id._meta.params)
         self.assertEqual(
