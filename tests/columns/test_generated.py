@@ -198,11 +198,11 @@ class TestTableMeta(TestCase):
             ["serial_number"],
         )
 
-    def test_insert_columns(self):
+    def test_writable_columns(self):
         """
-        Read only columns are left out of inserts.
+        Read only columns aren't writable, so are left out of inserts.
         """
         self.assertEqual(
-            [i._meta.name for i in TicketIdentity._meta.insert_columns],
+            [i._meta.name for i in TicketIdentity._meta.writable_columns],
             ["id", "name", "ticket_number"],
         )

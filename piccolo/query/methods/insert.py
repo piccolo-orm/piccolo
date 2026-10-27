@@ -108,7 +108,7 @@ class Insert(
         base = f"INSERT INTO {self.table._meta.get_formatted_tablename()}"
         columns = ",".join(
             f'"{i._meta.db_column_name}"'
-            for i in self.table._meta.insert_columns
+            for i in self.table._meta.writable_columns
         )
         values = ",".join("{}" for _ in self.add_delegate._add)
         query = f"{base} ({columns}) VALUES {values}"
