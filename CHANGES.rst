@@ -1,6 +1,40 @@
 Changes
 =======
 
+1.39.0
+------
+
+Identity columns
+~~~~~~~~~~~~~~~~
+
+Added support for identity columns, which are the recommended alternative to
+``Serial`` columns in Postgres:
+
+.. code-block:: python
+
+  from piccolo.columns import BigInt, Varchar
+  from piccolo.columns.generated import Identity
+  from piccolo.table import Table
+
+  class Band(Table):
+      id = BigInt(primary_key=True, generated=Identity())
+      name = Varchar()
+
+.. hint::
+    Using ``Serial`` and ``BigSerial`` primary keys is still fine - but
+    consider using identity columns or ``UUID`` (with ``UUID7`` defaults) for
+    new tables.
+
+Other changes
+~~~~~~~~~~~~~
+
+* ``Array(Numeric())`` columns in SQLite now return ``Decimal`` values instead
+  of floats (thanks to @b84330808 for the fix).
+* Fixed a bug with check constraints - strings contained quotes and ``time``
+  values weren't being properly serialised (thanks to @youdie006 for the fix).
+
+-------------------------------------------------------------------------------
+
 1.38.0
 ------
 
