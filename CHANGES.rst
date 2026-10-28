@@ -25,6 +25,8 @@ Added support for identity columns, which are the recommended alternative to
     consider using identity columns or ``UUID`` (with ``UUID7`` defaults) for
     new tables.
 
+Thanks to @mlbiche for suggesting this feature.
+
 Other changes
 ~~~~~~~~~~~~~
 
