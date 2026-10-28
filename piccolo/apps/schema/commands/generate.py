@@ -38,6 +38,7 @@ from piccolo.columns.column_types import (
     Varchar,
 )
 from piccolo.columns.defaults.interval import IntervalCustom
+from piccolo.columns.generated import Identity
 from piccolo.columns.indexes import IndexMethod
 from piccolo.engine.finder import engine_finder
 from piccolo.engine.postgres import PostgresEngine
@@ -69,10 +70,34 @@ class RowMeta:
     numeric_precision: Optional[Union[int, str]]
     numeric_scale: Optional[Union[int, str]]
     numeric_precision_radix: Optional[Literal[2, 10]]
+    is_identity: Literal["YES", "NO"]
+    identity_generation: Optional[str]
+    identity_start: Optional[str]
+    identity_increment: Optional[str]
 
     @classmethod
     def get_column_name_str(cls) -> str:
         return ", ".join(i.name for i in dataclasses.fields(cls))
+
+    def get_identity(self) -> Optional[Identity]:
+        """
+        If this is an identity column, returns the matching ``Identity``.
+        """
+        if self.is_identity != "YES":
+            return None
+
+        increment = int(self.identity_increment or 1)
+        start = int(self.identity_start or 1)
+
+        # Leave out any values which match the database defaults, so the
+        # output is cleaner.
+        default_start = 1 if increment > 0 else -1
+
+        return Identity(
+            always=self.identity_generation == "ALWAYS",
+            start=None if start == default_start else start,
+            increment=None if increment == 1 else increment,
+        )
 
 
 @dataclasses.dataclass
@@ -706,6 +731,8 @@ async def create_table_class_from_db(
             "unique": constraints.is_unique(column_name=column_name),
         }
 
+        identity = pg_row_meta.get_identity()
+
         index = indexes.get_column_index(column_name=column_name)
         if index is not None:
             kwargs["index"] = True
@@ -713,11 +740,13 @@ async def create_table_class_from_db(
 
         if constraints.is_primary_key(column_name=column_name):
             kwargs["primary_key"] = True
-            if column_type == Integer:
-                column_type = Serial
-            if column_type == BigInt:
-                column_type = Serial
-                # column_type = BigSerial
+            # Identity columns keep their integer type.
+            if identity is None:
+                if column_type == Integer:
+                    column_type = Serial
+                if column_type == BigInt:
+                    column_type = Serial
+                    # column_type = BigSerial
 
         if constraints.is_foreign_key(column_name=column_name):
             fk_constraint_table = constraints.get_foreign_key_constraint_name(
@@ -788,7 +817,11 @@ async def create_table_class_from_db(
             else:
                 kwargs["digits"] = None
 
-        if column_default:
+        if identity is not None and issubclass(column_type, Integer):
+            kwargs["generated"] = identity
+        elif column_default:
+            # Identity columns don't have a default - Cockroach reports a
+            # `nextval` one, so we don't look at it for them.
             default_value = get_column_default(
                 column_type, column_default, engine_type
             )

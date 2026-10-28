@@ -18,6 +18,7 @@ from piccolo.apps.migrations.auto.operations import (
 from piccolo.apps.migrations.auto.serialisation import deserialise_params
 from piccolo.columns import Column, column_types
 from piccolo.columns.column_types import ForeignKey, Serial
+from piccolo.columns.generated import Generated, Identity
 from piccolo.constraints import Constraint
 from piccolo.engine import engine_finder
 from piccolo.engine.cockroach import CockroachTransaction
@@ -788,9 +789,27 @@ class MigrationManager:
                     else:
                         await self._run_query(_Table.drop_index([column]))
 
+                # The column type might have changed, so `generated` can be
+                # in the params without having changed (e.g. `None` when
+                # going from `Varchar` to `Integer`).
+                generated = params.get("generated")
+                old_generated = old_params.get("generated")
+                generated_changed = generated != old_generated
+                if generated_changed:
+                    await self._alter_generated(
+                        _Table=_Table,
+                        table_class_name=table_class_name,
+                        column_name=alter_column.column_name,
+                        db_column_name=alter_column.db_column_name,
+                        generated=generated,
+                        old_generated=old_generated,
+                        backwards=backwards,
+                    )
+
                 # None is a valid value, so retrieve ellipsis if not found.
                 default = params.get("default", ...)
-                if default is not ...:
+                # If `generated` changed, the default was handled above.
+                if default is not ... and not generated_changed:
                     column = Column()
                     column._meta._table = _Table
                     column._meta._name = alter_column.column_name
@@ -817,6 +836,147 @@ class MigrationManager:
                             digits=digits,
                         )
                     )
+
+    async def _alter_generated(
+        self,
+        _Table: type[Table],
+        table_class_name: str,
+        column_name: str,
+        db_column_name: str,
+        generated: Optional[Generated],
+        old_generated: Optional[Generated],
+        backwards: bool,
+    ):
+        """
+        Add, change, or remove an identity on an existing column.
+        """
+        # The column as it will be once this migration has run.
+        existing_table = await self.get_table_from_snapshot(
+            table_class_name=table_class_name,
+            app_name=self.app_name,
+            offset=-1 if backwards else 0,
+        )
+        existing_column = existing_table._meta.get_column_by_name(column_name)
+
+        # The snapshot only updates the column's params, so recreate the
+        # column from them.
+        column = existing_column.__class__(**existing_column._meta.params)
+        column._meta._table = _Table
+        column._meta._name = column_name
+        column._meta.db_column_name = db_column_name
+
+        if _Table._meta.db.engine_type == "sqlite":
+            # An `INTEGER PRIMARY KEY` autoincrements whether or not it's an
+            # identity column, so there's nothing to change.
+            if column._meta.primary_key:
+                return
+
+            raise ValueError(
+                f"`{column_name}` - SQLite doesn't support adding or "
+                "removing identity columns."
+            )
+
+        if isinstance(old_generated, Identity) and isinstance(
+            generated, Identity
+        ):
+            old_increment = old_generated.increment or 1
+            new_increment = generated.increment or 1
+
+            # If the sequence changes direction, its min and max values are
+            # wrong, so we recreate it below instead.
+            if (old_increment > 0) == (new_increment > 0):
+                await self._set_identity(
+                    _Table=_Table,
+                    db_column_name=db_column_name,
+                    identity=generated,
+                    old_identity=old_generated,
+                )
+                return
+
+        if isinstance(old_generated, Identity):
+            # Postgres won't let us set a default on an identity column, so
+            # remove the identity first.
+            await self._run_query(
+                _Table.alter().drop_identity(column=db_column_name)
+            )
+
+        if isinstance(generated, Identity):
+            # Postgres won't let us add an identity to a column with a default.
+            await self._run_query(
+                _Table.alter().drop_default(column=db_column_name)
+            )
+            await self._run_query(
+                _Table.alter().add_identity(
+                    column=db_column_name, identity=generated
+                )
+            )
+
+            # The sequence starts at 1, so move it past any existing values,
+            # unless the user has chosen where it starts.
+            if generated.start is None and (generated.increment or 1) > 0:
+                await self._run_query(
+                    _Table.raw(
+                        "SELECT setval(pg_get_serial_sequence({}, {}), "
+                        f'MAX("{db_column_name}")) '
+                        f"FROM {_Table._meta.get_formatted_tablename()} "
+                        f'HAVING MAX("{db_column_name}") IS NOT NULL',
+                        _Table._meta.get_formatted_tablename(),
+                        db_column_name,
+                    )
+                )
+        elif generated is None:
+            # Restore the column's normal default.
+            default = column.get_default_value()
+            if default is not None:
+                await self._run_query(
+                    _Table.alter().set_default(column=column, value=default)
+                )
+
+    async def _set_identity(
+        self,
+        _Table: type[Table],
+        db_column_name: str,
+        identity: Identity,
+        old_identity: Identity,
+    ):
+        """
+        Change the options of an existing identity column in place, so the
+        sequence keeps its current value.
+        """
+        increment = identity.increment or 1
+
+        always = (
+            identity.always if identity.always != old_identity.always else None
+        )
+        new_increment = (
+            increment if identity.increment != old_identity.increment else None
+        )
+
+        start = None
+        restart = False
+        if identity.start != old_identity.start:
+            if identity.start is None:
+                # Go back to the Postgres default. The sequence carries on
+                # from its current value.
+                start = 1 if increment > 0 else -1
+            else:
+                # The user has chosen where the sequence starts, so move it
+                # there - the same as when adding an identity.
+                start = identity.start
+                restart = True
+
+        if always is None and start is None and new_increment is None:
+            return
+
+        await self._run_query(
+            _Table.alter().set_identity(
+                column=db_column_name,
+                always=always,
+                start=start,
+                increment=new_increment,
+                restart=restart,
+            )
+        )
 
     async def _run_drop_tables(self, backwards=False):
         for diffable_table in self.drop_tables:

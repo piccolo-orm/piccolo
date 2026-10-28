@@ -87,6 +87,10 @@ class TableMeta:
     secret_columns: list[Column] = field(default_factory=list)
     constraints: list[Constraint] = field(default_factory=list)
     auto_update_columns: list[Column] = field(default_factory=list)
+    # Columns which the database won't let us write values to.
+    read_only_columns: list[Column] = field(default_factory=list)
+    # Columns which aren't read only - used when inserting rows.
+    writable_columns: list[Column] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     help_text: Optional[str] = None
     _db: Optional[Engine] = None
@@ -308,6 +312,7 @@ class Table(metaclass=TableMetaclass):
         json_columns: list[Union[JSON, JSONB]] = []
         email_columns: list[Email] = []
         auto_update_columns: list[Column] = []
+        read_only_columns: list[Column] = []
         primary_key: Optional[Column] = None
         m2m_relationships: list[M2M] = []
         constaints: list[Constraint] = []
@@ -360,6 +365,10 @@ class Table(metaclass=TableMetaclass):
                 if column._meta.auto_update is not ...:
                     auto_update_columns.append(column)
 
+                generated = column.generated
+                if generated is not None and not generated.writable:
+                    read_only_columns.append(column)
+
             if isinstance(attribute, M2M):
                 attribute._meta._name = attribute_name
                 attribute._meta._table = cls
@@ -376,6 +385,15 @@ class Table(metaclass=TableMetaclass):
             columns.insert(0, primary_key)  # PK should be added first
             default_columns.append(primary_key)
 
+        # Some databases (e.g. CockroachDB) won't even let us insert
+        # `DEFAULT` into read only columns, so inserts leave them out. If
+        # every column is read only, keep them all, as we can't insert an
+        # empty row.
+        read_only_column_names = {i._meta.name for i in read_only_columns}
+        writable_columns = [
+            i for i in columns if i._meta.name not in read_only_column_names
+        ] or columns
+
         cls._meta = TableMeta(
             tablename=tablename,
             columns=columns,
@@ -388,6 +406,8 @@ class Table(metaclass=TableMetaclass):
             json_columns=json_columns,
             secret_columns=secret_columns,
             auto_update_columns=auto_update_columns,
+            read_only_columns=read_only_columns,
+            writable_columns=writable_columns,
             tags=tags,
             help_text=help_text,
             _db=db,
@@ -527,7 +547,8 @@ class Table(metaclass=TableMetaclass):
                 await band.save(columns=[Band.popularity])
 
             If ``columns=None`` (the default) then all columns will be synced
-            back to the database.
+            back to the database, except for any which the database generates
+            the values for.
 
         """
         cls = self.__class__
@@ -538,8 +559,15 @@ class Table(metaclass=TableMetaclass):
 
         # Pre-existing row - update
         if columns is None:
+            # Compare by name, as `Column.__eq__` returns a `Where`.
+            read_only_column_names = {
+                i._meta.name for i in cls._meta.read_only_columns
+            }
             column_instances = [
-                i for i in cls._meta.columns if not i._meta.primary_key
+                i
+                for i in cls._meta.columns
+                if not i._meta.primary_key
+                and i._meta.name not in read_only_column_names
             ]
         else:
             column_instances = [
@@ -876,7 +904,7 @@ class Table(metaclass=TableMetaclass):
         """
         args = [
             convert_to_sql_value(value=self[column._meta.name], column=column)
-            for column in self._meta.columns
+            for column in self._meta.writable_columns
         ]
 
         # If unquoted, dump it straight into the query.

@@ -8,6 +8,7 @@ import pytest
 from piccolo.columns import BigInt, Integer, Numeric, Varchar
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import ForeignKey, Text
+from piccolo.columns.generated import Identity
 from piccolo.schema import SchemaManager
 from piccolo.table import Table
 from tests.base import (
@@ -438,3 +439,101 @@ class TestSetDigits(TestCase):
         response = Ticket.raw(query).run_sync()
         self.assertIsNone(response[0]["numeric_precision"])
         self.assertIsNone(response[0]["numeric_scale"])
+
+
+###############################################################################
+
+
+class Concert(Table):
+    capacity = Integer(default=None)
+
+
+class TestIdentity(TestCase):
+    def setUp(self):
+        Concert.create_table().run_sync()
+
+    def tearDown(self):
+        Concert.alter().drop_table().run_sync()
+
+    @engines_only("postgres")
+    def test_add_and_drop_identity(self):
+        query = """
+            SELECT is_identity, identity_generation
+            FROM information_schema.columns
+            WHERE table_name = 'concert'
+            AND table_catalog = 'piccolo'
+            AND column_name = 'capacity'
+            """
+
+        Concert.alter().add_identity(
+            column=Concert.capacity, identity=Identity(always=False)
+        ).run_sync()
+        response = Concert.raw(query).run_sync()
+        self.assertEqual(
+            response[0],
+            {"is_identity": "YES", "identity_generation": "BY DEFAULT"},
+        )
+
+        Concert.alter().drop_identity(column=Concert.capacity).run_sync()
+        response = Concert.raw(query).run_sync()
+        self.assertEqual(
+            response[0], {"is_identity": "NO", "identity_generation": None}
+        )
+
+    def test_ddl(self):
+        query = Concert.alter().add_identity(
+            column="capacity", identity=Identity()
+        )
+        self.assertEqual(
+            query.ddl,
+            [
+                'ALTER TABLE "concert" ALTER COLUMN "capacity" ADD GENERATED '
+                "ALWAYS AS IDENTITY"
+            ],
+        )
+
+        query = Concert.alter().drop_identity(column="capacity")
+        self.assertEqual(
+            query.ddl,
+            [
+                'ALTER TABLE "concert" ALTER COLUMN "capacity" DROP IDENTITY '
+                "IF EXISTS"
+            ],
+        )
+
+        query = Concert.alter().set_identity(
+            column="capacity",
+            always=False,
+            start=10,
+            increment=2,
+            restart=True,
+        )
+        self.assertEqual(
+            query.ddl,
+            [
+                'ALTER TABLE "concert" ALTER COLUMN "capacity" SET GENERATED '
+                "BY DEFAULT SET START WITH 10 SET INCREMENT BY 2 RESTART"
+            ],
+        )
+
+    def test_set_identity_no_options(self):
+        with self.assertRaises(ValueError):
+            Concert.alter().set_identity(column="capacity")
+
+    @engines_only("postgres")
+    def test_set_identity(self):
+        Concert.alter().add_identity(
+            column=Concert.capacity, identity=Identity()
+        ).run_sync()
+        Concert.alter().set_identity(
+            column=Concert.capacity, always=False
+        ).run_sync()
+
+        response = Concert.raw("""
+            SELECT identity_generation
+            FROM information_schema.columns
+            WHERE table_name = 'concert'
+            AND table_catalog = 'piccolo'
+            AND column_name = 'capacity'
+            """).run_sync()
+        self.assertEqual(response[0], {"identity_generation": "BY DEFAULT"})

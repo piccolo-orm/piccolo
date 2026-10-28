@@ -72,6 +72,7 @@ from piccolo.columns.defaults.timestamptz import (
     TimestamptzNow,
 )
 from piccolo.columns.defaults.uuid import UUID4, UUIDArg
+from piccolo.columns.generated import Generated
 from piccolo.columns.operators.comparison import (
     ArrayAll,
     ArrayAny,
@@ -607,6 +608,20 @@ class Integer(Column):
         >>> await Band.select(Band.popularity)
         {'popularity': 1000}
 
+    :param generated:
+        Makes the database generate the value. For example, to make an
+        identity column (the recommended alternative to ``Serial`` in
+        Postgres):
+
+        .. code-block:: python
+
+            from piccolo.columns.generated import Identity
+
+            class Band(Table):
+                id = BigInt(primary_key=True, generated=Identity())
+
+        You can't specify a ``default`` as well.
+
     """
 
     math_delegate = MathDelegate()
@@ -614,11 +629,31 @@ class Integer(Column):
     def __init__(
         self,
         default: Union[int, Enum, Callable[[], int], None] = 0,
+        generated: Optional[Generated] = None,
         **kwargs: Unpack[ColumnKwargs],
     ) -> None:
         self._validate_default(default, (int, None))
+
+        if generated is not None:
+            if default not in (0, None):
+                raise ValueError(
+                    "A column can't have a `default` and be `generated`."
+                )
+            # The database generates the value, so there's no default.
+            default = None
+
         self.default = default
-        super().__init__(default=default, **kwargs)
+        self.generated = generated
+        super().__init__(default=default, generated=generated, **kwargs)
+
+    def get_default_value(self) -> Any:
+        if self.generated is not None:
+            # Let the database generate the value.
+            if self._meta.engine_type == "sqlite":
+                return NULL
+            return DEFAULT
+
+        return super().get_default_value()
 
     ###########################################################################
     # For update queries

@@ -15,6 +15,7 @@ from typing import Any, Optional
 
 from piccolo.columns import Column
 from piccolo.columns.defaults.base import Default
+from piccolo.columns.generated import Generated
 from piccolo.columns.reference import LazyTableReference
 from piccolo.table import Table
 from piccolo.utils.repr import repr_class_instance
@@ -605,6 +606,16 @@ def serialise_params(
                     module=value.__class__.__module__,
                     target=value.__class__.__name__,
                     expect_conflict_with_global_name=UniqueGlobalNames.DEFAULT,
+                )
+            )
+            continue
+
+        if isinstance(value, Generated):
+            params[key] = SerialisedClassInstance(instance=value)
+            extra_imports.append(
+                Import(
+                    module=value.__class__.__module__,
+                    target=value.__class__.__name__,
                 )
             )
             continue

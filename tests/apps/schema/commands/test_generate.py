@@ -17,12 +17,15 @@ from piccolo.apps.schema.commands.generate import (
 from piccolo.columns.base import Column
 from piccolo.columns.column_types import (
     UUID,
+    BigInt,
     ForeignKey,
     Integer,
+    Serial,
     Timestamp,
     Varchar,
 )
 from piccolo.columns.defaults.uuid import UUID7
+from piccolo.columns.generated import Identity
 from piccolo.columns.indexes import IndexMethod
 from piccolo.schema import SchemaManager
 from piccolo.table import Table, create_db_tables_sync
@@ -220,6 +223,117 @@ class TestGenerateWithIndexes(TestCase):
         capacity_column = Concert_._meta.get_column_by_name("capacity")
         self.assertEqual(capacity_column._meta.index, False)
         self.assertEqual(capacity_column._meta.index_method, IndexMethod.btree)
+
+
+###############################################################################
+
+
+class TicketIdentity(Table):
+    id = BigInt(primary_key=True, generated=Identity())
+    serial_number = Integer(
+        generated=Identity(always=False, start=100, increment=5)
+    )
+    countdown = Integer(generated=Identity(increment=-1))
+    capacity = Integer(default=0)
+
+
+@engines_only("postgres", "cockroach")
+class TestGenerateWithIdentity(TestCase):
+    def setUp(self):
+        TicketIdentity.create_table().run_sync()
+
+    def tearDown(self):
+        TicketIdentity.alter().drop_table(if_exists=True).run_sync()
+
+    def _get_table(self) -> type[Table]:
+        output_schema: OutputSchema = run_sync(
+            get_output_schema(include=[TicketIdentity._meta.tablename])
+        )
+        TicketIdentity_ = output_schema.get_table_with_name("TicketIdentity")
+        assert TicketIdentity_ is not None
+        return TicketIdentity_
+
+    def test_primary_key(self):
+        """
+        An identity primary key shouldn't be turned into a ``Serial``.
+        """
+        id_column = self._get_table()._meta.primary_key
+        self.assertIs(type(id_column), BigInt)
+        self.assertEqual(id_column._meta.params["generated"], Identity())
+
+    def test_options(self):
+        """
+        Options which don't match the database defaults are kept.
+        """
+        TicketIdentity_ = self._get_table()
+
+        self.assertEqual(
+            TicketIdentity_._meta.get_column_by_name(
+                "serial_number"
+            )._meta.params["generated"],
+            Identity(always=False, start=100, increment=5),
+        )
+        self.assertEqual(
+            TicketIdentity_._meta.get_column_by_name("countdown")._meta.params[
+                "generated"
+            ],
+            Identity(increment=-1),
+        )
+
+    def test_not_identity(self):
+        """
+        Other integer columns are unaffected.
+        """
+        capacity = self._get_table()._meta.get_column_by_name("capacity")
+        self.assertIsNone(capacity._meta.params.get("generated"))
+        self.assertEqual(capacity._meta.params["default"], 0)
+
+    @patch("piccolo.apps.schema.commands.generate.print")
+    def test_generate_command(self, print_: MagicMock):
+        """
+        The output should include ``Identity``, and its import.
+        """
+        run_sync(generate())
+        file_contents = print_.call_args[0][0]
+        ast.parse(file_contents)
+
+        self.assertIn(
+            "from piccolo.columns.generated import Identity", file_contents
+        )
+        # The output is formatted using black, so each argument is on its own
+        # line.
+        self.assertIn(
+            "    id = BigInt(\n"
+            "        default=None,\n"
+            "        generated=Identity(always=True, start=None, "
+            "increment=None),\n",
+            file_contents,
+        )
+
+
+class Venue(Table):
+    name = Varchar()
+
+
+@engines_only("postgres", "cockroach")
+class TestGenerateSerialPrimaryKey(TestCase):
+    """
+    Integer primary keys which aren't identity columns are still ``Serial``.
+    """
+
+    def setUp(self):
+        Venue.create_table().run_sync()
+
+    def tearDown(self):
+        Venue.alter().drop_table(if_exists=True).run_sync()
+
+    def test_serial(self):
+        output_schema: OutputSchema = run_sync(
+            get_output_schema(include=[Venue._meta.tablename])
+        )
+        Venue_ = output_schema.get_table_with_name("Venue")
+        assert Venue_ is not None
+        self.assertIs(type(Venue_._meta.primary_key), Serial)
 
 
 ###############################################################################

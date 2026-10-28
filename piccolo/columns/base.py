@@ -23,6 +23,7 @@ from piccolo.columns.choices import Choice
 from piccolo.columns.combination import Where
 from piccolo.columns.defaults.base import Default
 from piccolo.columns.defaults.interval import IntervalCustom
+from piccolo.columns.generated import Generated, Identity
 from piccolo.columns.indexes import IndexMethod
 from piccolo.columns.operators.comparison import (
     ComparisonOperator,
@@ -481,6 +482,8 @@ class Column(Selectable):
 
     value_type: type = int
     default: Any
+    # Set by columns which support the ``generated`` argument.
+    generated: Optional[Generated] = None
 
     def __init__(
         self,
@@ -1015,10 +1018,29 @@ class Column(Selectable):
                 f" ON UPDATE {on_update}"
             )
 
+        generated = self.generated
+        if generated is not None:
+            # SQLite has no identity columns - an `INTEGER PRIMARY KEY`
+            # autoincrements, but other columns have nothing to generate the
+            # value.
+            if (
+                isinstance(generated, Identity)
+                and self._meta.engine_type == "sqlite"
+                and not self._meta.primary_key
+            ):
+                raise ValueError(
+                    f"`{self._meta.name}` - SQLite only supports identity "
+                    "columns for primary keys."
+                )
+
+            generated_sql = getattr(generated, self._meta.engine_type)
+            if generated_sql:
+                query += f" {generated_sql}"
+
         # Always ran for Cockroach because unique_rowid() is directly
         # defined for Cockroach Serial and BigSerial.
         # Postgres and SQLite will not run this for Serial and BigSerial.
-        if self._meta.engine_type in (
+        elif self._meta.engine_type in (
             "cockroach"
         ) or self.__class__.__name__ not in ("Serial", "BigSerial"):
             default = self.get_default_value()
