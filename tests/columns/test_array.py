@@ -458,6 +458,8 @@ class TestDateTimeDecimalArray(TestCase):
         self.assertListEqual(row.timestamp, [test_timestamp])
         self.assertListEqual(row.timestamptz, [test_timestamptz])
         self.assertListEqual(row.decimal, [test_decimal])
+        # `50.0 == Decimal("50.0")`, so check the type too.
+        self.assertIsInstance(row.decimal[0], Decimal)
 
         self.assertIsNone(row.date_nullable)
         self.assertIsNone(row.time_nullable)
