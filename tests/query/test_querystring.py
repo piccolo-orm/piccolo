@@ -1,3 +1,4 @@
+from datetime import time
 from unittest import TestCase
 
 from piccolo.querystring import QueryString
@@ -28,6 +29,21 @@ class TestQueryString(TestCase):
     def test_querystring_with_no_args(self):
         qs = QueryString("SELECT name FROM band")
         self.assertEqual(qs.compile_string(), ("SELECT name FROM band", []))
+
+    def test_string_escapes_quotes(self):
+        """
+        ``Check`` constraints use ``__str__``, so the output must be valid SQL.
+        """
+        qs = QueryString("SELECT id FROM band WHERE genre = {}", "rock'n'roll")
+        self.assertEqual(
+            qs.__str__(), "SELECT id FROM band WHERE genre = 'rock''n''roll'"
+        )
+
+    def test_string_time(self):
+        qs = QueryString("SELECT id FROM shop WHERE opens >= {}", time(9, 0))
+        self.assertEqual(
+            qs.__str__(), "SELECT id FROM shop WHERE opens >= '09:00:00'"
+        )
 
 
 class TestQueryStringOperators(TestCase):

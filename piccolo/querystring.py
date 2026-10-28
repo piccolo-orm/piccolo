@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, time
 from importlib.util import find_spec
 from string import Formatter
 from typing import TYPE_CHECKING, Any, Optional
@@ -155,8 +155,9 @@ class QueryString(Selectable):
         for arg in combined_args:
             _type = type(arg)
             if _type == str:
-                converted_args.append(f"'{arg}'")
-            elif _type == datetime or _type == date:
+                escaped = arg.replace("'", "''")
+                converted_args.append(f"'{escaped}'")
+            elif _type == datetime or _type == date or _type == time:
                 dt_string = arg.isoformat()
                 converted_args.append(f"'{dt_string}'")
             elif _type == UUID or _type == apgUUID:
