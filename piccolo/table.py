@@ -1246,6 +1246,7 @@ class Table(metaclass=TableMetaclass):
     def objects(
         cls: type[TableInstance],
         *prefetch: Union[ForeignKey, list[ForeignKey]],
+        exclude_secrets=False,
     ) -> Objects[TableInstance]:
         """
         Returns a list of table instances (each representing a row), which you
@@ -1280,8 +1281,18 @@ class Table(metaclass=TableMetaclass):
                 >>> band.manager
                 <Band 1>
 
+        :param exclude_secrets:
+            If ``True``, any columns with ``secret=True`` are omitted from the
+            response. For example, we use this for the password column of
+            :class:`BaseUser <piccolo.apps.user.tables.BaseUser>`. Even though
+            the passwords are hashed, you still don't want them being passed
+            over the network if avoidable.
+
         """
-        return Objects[TableInstance](table=cls, prefetch=prefetch)
+
+        return Objects[TableInstance](
+            table=cls, prefetch=prefetch, exclude_secrets=exclude_secrets
+        )
 
     @classmethod
     def count(

@@ -308,6 +308,7 @@ class Objects(
 
     __slots__ = (
         "nested",
+        "exclude_secrets",
         "as_of_delegate",
         "limit_delegate",
         "offset_delegate",
@@ -323,9 +324,12 @@ class Objects(
         self,
         table: type[TableInstance],
         prefetch: Sequence[Union[ForeignKey, list[ForeignKey]]] = (),
+        exclude_secrets: bool = False,
         **kwargs,
     ):
         super().__init__(table, **kwargs)
+        self.exclude_secrets = exclude_secrets
+
         self.as_of_delegate = AsOfDelegate()
         self.limit_delegate = LimitDelegate()
         self.offset_delegate = OffsetDelegate()
@@ -457,7 +461,7 @@ class Objects(
 
     @property
     def default_querystrings(self) -> Sequence[QueryString]:
-        select = Select(table=self.table)
+        select = Select(table=self.table, exclude_secrets=self.exclude_secrets)
 
         for attr in (
             "as_of_delegate",

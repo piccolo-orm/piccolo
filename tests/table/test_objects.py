@@ -1,3 +1,6 @@
+import pytest
+
+from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.column_types import ForeignKey
 from piccolo.testing.test_case import AsyncTableTest
 from tests.base import DBTestCase, engines_only, sqlite_only
@@ -64,6 +67,13 @@ class TestOffset(DBTestCase):
 
 
 class TestGet(DBTestCase):
+
+    def setUp(self):
+        BaseUser.create_table().run_sync()
+
+    def tearDown(self):
+        BaseUser.alter().drop_table().run_sync()
+
     def test_get(self):
         self.insert_row()
 
@@ -93,6 +103,18 @@ class TestGet(DBTestCase):
         )
         assert band is not None
         self.assertIsInstance(band.manager, Manager)
+
+    def test_get_exclude_secrets(self):
+        """
+        Make sure that secret fields are omitted from the response when
+        requested.
+        """
+        user = BaseUser(username="piccolo", password="piccolo123")
+        user.save().run_sync()
+
+        user = BaseUser.objects(exclude_secrets=True).first().run_sync()
+        assert user is not None
+        assert user.password is None
 
 
 class TestGetOrCreate(DBTestCase):
