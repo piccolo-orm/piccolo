@@ -116,6 +116,11 @@ class TestGet(DBTestCase):
         assert user is not None
         assert user.password is ...
 
+        user.save().run_sync()
+
+        authenticated = BaseUser.login_sync("piccolo", "piccolo123")
+        self.assertTrue(authenticated is not None)
+
 
 class TestGetOrCreate(DBTestCase):
     def test_simple_where_clause(self):

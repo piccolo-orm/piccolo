@@ -472,6 +472,7 @@ class Table(metaclass=TableMetaclass):
         _data = _data or {}
 
         self._exists_in_db = _exists_in_db
+        self._ignore_missing = _ignore_missing
 
         # This is used by get_or_create to indicate to the user whether it
         # was an existing row or not.
@@ -578,6 +579,9 @@ class Table(metaclass=TableMetaclass):
         values: dict[Column, Any] = {
             i: getattr(self, i._meta.name, None) for i in column_instances
         }
+
+        if self._ignore_missing:
+            values = {i: v for i, v in values.items() if v != ...}
 
         # Assign any `auto_update` values
         if cls._meta.auto_update_columns:
