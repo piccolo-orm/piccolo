@@ -122,7 +122,11 @@ class Query(Generic[TableInstance, QueryResponseType]):
                 return cast(
                     QueryResponseType,
                     [
-                        self.table(**columns, _exists_in_db=True)
+                        self.table(
+                            **columns,
+                            _exists_in_db=True,
+                            _ignore_missing_secrets=True,
+                        )
                         for columns in raw
                     ],
                 )

@@ -69,6 +69,10 @@ TABLENAME_WARNING = (
 TABLE_REGISTRY: list[type[Table]] = []
 
 
+class ExcludedSecretValue:
+    pass
+
+
 @dataclass
 class TableMeta:
     """
@@ -438,15 +442,17 @@ class Table(metaclass=TableMetaclass):
         _data: Optional[dict[Column, Any]] = None,
         _ignore_missing: bool = False,
         _exists_in_db: bool = False,
+        _ignore_missing_secrets: bool = False,
         **kwargs,
     ):
         """
         The constructor can be used to assign column values.
 
         .. note::
-            The ``_data``, ``_ignore_missing``, and ``_exists_in_db``
-            arguments are prefixed with an underscore to help prevent a clash
-            with a column name which might be passed in via kwargs.
+            The ``_data``, ``_ignore_missing``, ``_exists_in_db`` and
+            ``_ignore_missing_secrets`` arguments are prefixed with an
+            underscore to help prevent a clash with a column name which might
+            be passed in via kwargs.
 
         :param _data:
             There's two ways of passing in the data for each column. Firstly,
@@ -467,6 +473,9 @@ class Table(metaclass=TableMetaclass):
             haven't been provided.
         :param _exists_in_db:
             Used internally to track whether this row exists in the database.
+        :param _ignore_missing_secrets:
+            If ``False`` any missing columns with ``secret=True`` will be set
+            to an instance of ``ExcludedSecretValue``.
 
         """
         _data = _data or {}
@@ -488,6 +497,13 @@ class Table(metaclass=TableMetaclass):
                     value = kwargs.pop(
                         cast(str, column._meta.db_column_name), ...
                     )
+
+            if (
+                value is ...
+                and column._meta.secret
+                and _ignore_missing_secrets
+            ):
+                value = ExcludedSecretValue()
 
             if value is ...:
                 value = column.get_default_value()
@@ -577,6 +593,12 @@ class Table(metaclass=TableMetaclass):
 
         values: dict[Column, Any] = {
             i: getattr(self, i._meta.name, None) for i in column_instances
+        }
+
+        values = {
+            i: v
+            for i, v in values.items()
+            if not isinstance(v, ExcludedSecretValue)
         }
 
         # Assign any `auto_update` values
@@ -1246,6 +1268,7 @@ class Table(metaclass=TableMetaclass):
     def objects(
         cls: type[TableInstance],
         *prefetch: Union[ForeignKey, list[ForeignKey]],
+        exclude_secrets=False,
     ) -> Objects[TableInstance]:
         """
         Returns a list of table instances (each representing a row), which you
@@ -1280,8 +1303,19 @@ class Table(metaclass=TableMetaclass):
                 >>> band.manager
                 <Band 1>
 
+        :param exclude_secrets:
+            If ``True``, any columns with ``secret=True`` are being set to an
+            ExcludedSecretValue default value in the response. For example, we
+            use this for the password column of
+            :class:`BaseUser <piccolo.apps.user.tables.BaseUser>`. Even though
+            the passwords are hashed, you still don't want them being passed
+            over the network if avoidable.
+
         """
-        return Objects[TableInstance](table=cls, prefetch=prefetch)
+
+        return Objects[TableInstance](
+            table=cls, prefetch=prefetch, exclude_secrets=exclude_secrets
+        )
 
     @classmethod
     def count(
