@@ -114,7 +114,7 @@ class TestGet(DBTestCase):
 
         user = BaseUser.objects(exclude_secrets=True).first().run_sync()
         assert user is not None
-        assert user.password is None
+        assert user.password is ...
 
 
 class TestGetOrCreate(DBTestCase):

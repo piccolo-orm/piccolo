@@ -489,7 +489,7 @@ class Table(metaclass=TableMetaclass):
                         cast(str, column._meta.db_column_name), ...
                     )
 
-            if value is ...:
+            if value is ... and not _ignore_missing:
                 value = column.get_default_value()
 
                 if isinstance(value, Default):
