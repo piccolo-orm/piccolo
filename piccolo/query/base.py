@@ -123,7 +123,9 @@ class Query(Generic[TableInstance, QueryResponseType]):
                     QueryResponseType,
                     [
                         self.table(
-                            **columns, _exists_in_db=True, _ignore_missing=True
+                            **columns,
+                            _exists_in_db=True,
+                            _ignore_missing_secrets=True,
                         )
                         for columns in raw
                     ],

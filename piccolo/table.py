@@ -442,15 +442,17 @@ class Table(metaclass=TableMetaclass):
         _data: Optional[dict[Column, Any]] = None,
         _ignore_missing: bool = False,
         _exists_in_db: bool = False,
+        _ignore_missing_secrets: bool = False,
         **kwargs,
     ):
         """
         The constructor can be used to assign column values.
 
         .. note::
-            The ``_data``, ``_ignore_missing``, and ``_exists_in_db``
-            arguments are prefixed with an underscore to help prevent a clash
-            with a column name which might be passed in via kwargs.
+            The ``_data``, ``_ignore_missing``, ``_exists_in_db`` and
+            ``_ignore_missing_secrets`` arguments are prefixed with an
+            underscore to help prevent a clash with a column name which might
+            be passed in via kwargs.
 
         :param _data:
             There's two ways of passing in the data for each column. Firstly,
@@ -471,6 +473,9 @@ class Table(metaclass=TableMetaclass):
             haven't been provided.
         :param _exists_in_db:
             Used internally to track whether this row exists in the database.
+        :param _ignore_missing_secrets:
+            If ``False`` missing value will be set to an instance of
+            ``ExcludedSecretValue``.
 
         """
         _data = _data or {}
@@ -493,7 +498,7 @@ class Table(metaclass=TableMetaclass):
                         cast(str, column._meta.db_column_name), ...
                     )
 
-            if value is ... and _ignore_missing:
+            if value is ... and _ignore_missing_secrets:
                 value = ExcludedSecretValue()
 
             if value is ...:
