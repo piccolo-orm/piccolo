@@ -1,5 +1,6 @@
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.column_types import ForeignKey
+from piccolo.table import ExcludedSecretValue
 from piccolo.testing.test_case import AsyncTableTest
 from tests.base import DBTestCase, engines_only, sqlite_only
 from tests.example_apps.music.tables import Band, Manager
@@ -114,7 +115,7 @@ class TestGet(DBTestCase):
 
         user = BaseUser.objects(exclude_secrets=True).first().run_sync()
         assert user is not None
-        assert user.password is ...
+        assert isinstance(user.password, ExcludedSecretValue)
 
         user.save().run_sync()
 

@@ -13,7 +13,7 @@ from typing import Any, Optional, Union
 from piccolo.columns import Boolean, Secret, Timestamp, Varchar
 from piccolo.columns.column_types import Serial
 from piccolo.columns.readable import Readable
-from piccolo.table import Table
+from piccolo.table import ExcludedSecretValue, Table
 from piccolo.utils.sync import run_sync
 
 logger = logging.getLogger(__name__)
@@ -174,7 +174,7 @@ class BaseUser(Table, tablename="piccolo_user"):
         if (
             name == "password"
             and value
-            and value != ...
+            and not isinstance(value, ExcludedSecretValue)
             and not value.startswith("pbkdf2_sha256")
         ):
             value = self.__class__.hash_password(value)
