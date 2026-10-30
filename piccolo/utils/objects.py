@@ -82,6 +82,6 @@ def make_nested_object(
         else:
             table_params[key] = value
 
-    table_instance = table_class(**table_params)
+    table_instance = table_class(**table_params, _ignore_missing_secrets=True)
     table_instance._exists_in_db = True
     return table_instance
