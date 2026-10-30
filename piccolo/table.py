@@ -474,8 +474,8 @@ class Table(metaclass=TableMetaclass):
         :param _exists_in_db:
             Used internally to track whether this row exists in the database.
         :param _ignore_missing_secrets:
-            If ``False`` any missing columns with ``secret=True`` will be set to
-            an instance of ``ExcludedSecretValue``.
+            If ``False`` any missing columns with ``secret=True`` will be set
+            to an instance of ``ExcludedSecretValue``.
 
         """
         _data = _data or {}
