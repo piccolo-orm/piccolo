@@ -1,5 +1,3 @@
-import pytest
-
 from piccolo.apps.user.tables import BaseUser
 from piccolo.columns.column_types import ForeignKey
 from piccolo.testing.test_case import AsyncTableTest
