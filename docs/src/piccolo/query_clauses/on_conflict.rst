@@ -216,7 +216,7 @@ Learn more
 ----------
 
 * `Postgres docs <https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT>`_
-* `Cockroach docs <https://www.cockroachlabs.com/docs/v2.0/insert.html#on-conflict-clause>`_
+* `Cockroach docs <https://www.cockroachlabs.com/docs/stable/insert#on-conflict-clause>`_
 * `SQLite docs <https://www.sqlite.org/lang_UPSERT.html>`_
 
 Source

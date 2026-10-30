@@ -59,7 +59,7 @@ See the `installation guide for your OS <https://www.cockroachlabs.com/docs/v25.
 Create database
 ~~~~~~~~~~~~~~~
 The playground is for testing and learning purposes only, so you can start a CockroachDB
-`single node with the insecure flag <https://www.cockroachlabs.com/docs/v25.2/cockroach-start-single-node.html/>`_
+`single node with the insecure flag <https://www.cockroachlabs.com/docs/v25.2/cockroach-start-single-node>`_
 (for non-production testing only) like this:
 
 .. code-block:: bash
