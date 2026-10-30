@@ -67,9 +67,11 @@ class TestOffset(DBTestCase):
 class TestGet(DBTestCase):
 
     def setUp(self):
+        super().setUp()
         BaseUser.create_table().run_sync()
 
     def tearDown(self):
+        super().tearDown()
         BaseUser.alter().drop_table().run_sync()
 
     def test_get(self):
