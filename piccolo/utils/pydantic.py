@@ -267,7 +267,7 @@ def create_pydantic_model(
 
         params: dict[str, Any] = {}
         if is_optional:
-            params["default"] = None
+            params["default"] = column.get_default_value()
 
         if column._meta.db_column_name != column._meta.name:
             params["alias"] = column._meta.db_column_name
