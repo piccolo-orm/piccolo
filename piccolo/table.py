@@ -1300,8 +1300,9 @@ class Table(metaclass=TableMetaclass):
                 <Band 1>
 
         :param exclude_secrets:
-            If ``True``, any columns with ``secret=True`` are omitted from the
-            response. For example, we use this for the password column of
+            If ``True``, any columns with ``secret=True`` are being set to an
+            ExcludedSecretValue default value in the response. For example, we
+            use this for the password column of
             :class:`BaseUser <piccolo.apps.user.tables.BaseUser>`. Even though
             the passwords are hashed, you still don't want them being passed
             over the network if avoidable.
