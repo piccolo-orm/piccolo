@@ -39,6 +39,15 @@ class TestInsert(DBTestCase):
 
         self.assertIn("Rustaceans", names)
 
+    def test_no_rows(self):
+        with self.assertRaises(ValueError) as manager:
+            Band.insert().run_sync()
+
+        self.assertEqual(
+            manager.exception.__str__(),
+            "No rows were specified to insert.",
+        )
+
     def test_incompatible_type(self):
         """
         You shouldn't be able to add instances of a different table.
