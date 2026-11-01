@@ -17,6 +17,7 @@ from piccolo.utils.list import flatten
 from piccolo.utils.sql_values import convert_to_sql_value
 
 if TYPE_CHECKING:  # pragma: no cover
+    from piccolo.query.methods.cte import CTE
     from piccolo.querystring import Selectable
     from piccolo.table import Table  # noqa
 
@@ -891,3 +892,37 @@ class LockRowsDelegate:
             raise ValueError("Unrecognised `lock_strength` value.")
 
         self._lock_rows = LockRows(lock_strength_, nowait, skip_locked, of)
+
+
+@dataclass
+class WithDelegate:
+    """
+    Stores the ``CTE`` objects which are used to build a ``WITH`` clause.
+    """
+
+    _ctes: list[CTE] = field(default_factory=list)
+
+    def with_(self, *ctes: CTE) -> None:
+        from piccolo.query.methods.cte import CTE, CTEError
+
+        if len(ctes) == 0:
+            raise CTEError("`with_` requires at least one CTE.")
+
+        names = {cte.name for cte in self._ctes}
+        for cte in ctes:
+            if not isinstance(cte, CTE):
+                raise CTEError(
+                    f"`with_` arguments must be CTE instances, got "
+                    f"{type(cte).__name__}."
+                )
+            if cte.name in names:
+                raise CTEError(f"Duplicate CTE name {cte.name!r}.")
+            names.add(cte.name)
+
+        self._ctes.extend(ctes)
+
+    @property
+    def querystring(self) -> Optional[QueryString]:
+        from piccolo.query.methods.cte import build_with_clause_querystring
+
+        return build_with_clause_querystring(self._ctes)
