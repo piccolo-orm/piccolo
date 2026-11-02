@@ -5,7 +5,6 @@ import os
 import string
 from dataclasses import dataclass
 from itertools import chain
-from types import ModuleType
 from typing import Optional
 
 import black
@@ -32,8 +31,6 @@ TEMPLATE_DIRECTORY = os.path.join(
 JINJA_ENV = jinja2.Environment(
     loader=jinja2.FileSystemLoader(searchpath=TEMPLATE_DIRECTORY),
 )
-
-MIGRATION_MODULES: dict[str, ModuleType] = {}
 
 VALID_PYTHON_MODULE_CHARACTERS = string.ascii_lowercase + string.digits + "_"
 

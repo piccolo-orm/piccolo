@@ -183,9 +183,6 @@ class TableTriggers:
     tablename: str
     triggers: list[Trigger]
 
-    def get_column_triggers(self, column_name: str) -> list[Trigger]:
-        return [i for i in self.triggers if i.column_name == column_name]
-
     def get_column_ref_trigger(
         self, column_name: str, references_table: str
     ) -> Optional[Trigger]:
