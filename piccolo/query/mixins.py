@@ -357,14 +357,6 @@ class ReturningDelegate:
 
 
 @dataclass
-class CountDelegate:
-    _count: bool = False
-
-    def count(self):
-        self._count = True
-
-
-@dataclass
 class AddDelegate:
     _add: list[Table] = field(default_factory=list)
 
