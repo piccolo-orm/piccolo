@@ -88,6 +88,10 @@ class Insert(
 
     ###########################################################################
 
+    def _validate(self):
+        if not self.add_delegate._add:
+            raise ValueError("No rows were specified to insert.")
+
     def _raw_response_callback(self, results: list):
         """
         Assign the ids of the created rows to the model instances.
