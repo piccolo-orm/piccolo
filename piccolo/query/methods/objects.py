@@ -29,6 +29,7 @@ from piccolo.query.mixins import (
     OrderByDelegate,
     OutputDelegate,
     PrefetchDelegate,
+    PrefetchRelatedDelegate,
     WhereDelegate,
 )
 from piccolo.query.proxy import Proxy
@@ -298,6 +299,72 @@ class GetRelated(Generic[ReferencedTable]):
 ###############################################################################
 
 
+def get_relation_key(foreign_key: ForeignKey) -> str:
+    """
+    A unique name for a reverse relation, which is used to cache the related
+    rows on a ``Table`` instance.
+    """
+    return (
+        f"{foreign_key._meta.table._meta.tablename}."
+        f"{foreign_key._meta.name}"
+    )
+
+
+async def prefetch_related(
+    rows: Sequence[Table],
+    *foreign_keys: ForeignKey,
+    node: Optional[str] = None,
+    in_pool: bool = True,
+) -> None:
+    """
+    Fetch reverse relations for lots of rows at once, using a single query per
+    relation, rather than one query per row.
+
+    .. code-block:: python
+
+        managers = await Manager.objects()
+        await prefetch_related(managers, Band.manager)
+
+        # No additional queries are run:
+        for manager in managers:
+            print(await manager.band_set)
+
+    Most of the time you won't need to call this directly - use
+    :meth:`Objects.prefetch_related` instead.
+
+    :param rows:
+        The rows which the foreign keys point at.
+    :param foreign_keys:
+        The foreign key columns to follow backwards.
+
+    """
+    if not rows:
+        return
+
+    primary_key_name = rows[0]._meta.primary_key._meta.name
+    primary_key_values = [getattr(row, primary_key_name) for row in rows]
+
+    for foreign_key in foreign_keys:
+        related_rows = (
+            await foreign_key._meta.table.objects()
+            .where(foreign_key.is_in(primary_key_values))
+            .run(node=node, in_pool=in_pool)
+        )
+
+        grouped: dict[Any, list[Table]] = {}
+        for related_row in related_rows:
+            grouped.setdefault(
+                getattr(related_row, foreign_key._meta.name), []
+            ).append(related_row)
+
+        relation_key = get_relation_key(foreign_key)
+
+        for row in rows:
+            row._prefetched_relations[relation_key] = grouped.get(
+                getattr(row, primary_key_name), []
+            )
+
+
 class Objects(
     Query[TableInstance, list[TableInstance]], Generic[TableInstance]
 ):
@@ -315,8 +382,10 @@ class Objects(
         "output_delegate",
         "callback_delegate",
         "prefetch_delegate",
+        "prefetch_related_delegate",
         "where_delegate",
         "lock_rows_delegate",
+        "_prefetched_results",
     )
 
     def __init__(
@@ -335,10 +404,17 @@ class Objects(
         self.callback_delegate = CallbackDelegate()
         self.prefetch_delegate = PrefetchDelegate()
         self.prefetch(*prefetch)
+        self.prefetch_related_delegate = PrefetchRelatedDelegate()
         self.where_delegate = WhereDelegate()
         self.lock_rows_delegate = LockRowsDelegate()
 
+        # If this query was returned by `Table.get_related_objects`, and the
+        # rows were already fetched by `prefetch_related`, then they're stored
+        # here so we don't have to query the database again.
+        self._prefetched_results: Optional[list[TableInstance]] = None
+
     def output(self: Self, load_json: bool = False) -> Self:
+        self._discard_prefetched_results()
         self.output_delegate.output(
             as_list=False, as_json=False, load_json=load_json
         )
@@ -350,26 +426,57 @@ class Objects(
         *,
         on: CallbackType = CallbackType.success,
     ) -> Self:
+        self._discard_prefetched_results()
         self.callback_delegate.callback(callbacks, on=on)
         return self
 
     def as_of(self, interval: str = "-1s") -> Objects:
         if self.engine_type != "cockroach":
             raise NotImplementedError("Only CockroachDB supports AS OF")
+        self._discard_prefetched_results()
         self.as_of_delegate.as_of(interval)
         return self
 
     def limit(self: Self, number: int) -> Self:
+        self._discard_prefetched_results()
         self.limit_delegate.limit(number)
         return self
 
     def prefetch(
         self: Self, *fk_columns: Union[ForeignKey, list[ForeignKey]]
     ) -> Self:
+        self._discard_prefetched_results()
         self.prefetch_delegate.prefetch(*fk_columns)
         return self
 
+    def prefetch_related(self: Self, *foreign_keys: ForeignKey) -> Self:
+        """
+        Fetch reverse relations for every row returned by this query, using a
+        single extra query per relation instead of one query per row.
+
+        .. code-block:: python
+
+            # 2 queries in total, no matter how many managers there are:
+            managers = await Manager.objects().prefetch_related(Band.manager)
+
+            for manager in managers:
+                print(await manager.band_set)
+
+        Each row keeps its own related rows, so accessing the relation
+        afterwards doesn't hit the database again. Narrowing the relation in
+        any way (with ``where``, ``order_by``, ``limit`` etc.) runs a query, as
+        the prefetched rows can't answer it.
+
+        :param foreign_keys:
+            The foreign key columns which point at this table.
+
+        """
+        self._discard_prefetched_results()
+        self.prefetch_related_delegate.prefetch_related(*foreign_keys)
+        return self
+
     def offset(self: Self, number: int) -> Self:
+        self._discard_prefetched_results()
         self.offset_delegate.offset(number)
         return self
 
@@ -383,12 +490,21 @@ class Objects(
             else:
                 _columns.append(column)
 
+        self._discard_prefetched_results()
         self.order_by_delegate.order_by(*_columns, ascending=ascending)
         return self
 
     def where(self: Self, *where: Union[Combinable, QueryString]) -> Self:
+        self._discard_prefetched_results()
         self.where_delegate.where(*where)
         return self
+
+    def _discard_prefetched_results(self) -> None:
+        """
+        Any change to the query means the rows cached by ``prefetch_related``
+        can no longer answer it.
+        """
+        self._prefetched_results = None
 
     ###########################################################################
 
@@ -411,12 +527,14 @@ class Objects(
         skip_locked: bool = False,
         of: tuple[type[Table], ...] = (),
     ) -> Self:
+        self._discard_prefetched_results()
         self.lock_rows_delegate.lock_rows(
             lock_strength, nowait, skip_locked, of
         )
         return self
 
     def get(self, where: Combinable) -> Get[TableInstance]:
+        self._discard_prefetched_results()
         self.where_delegate.where(where)
         self.limit_delegate.limit(1)
         return Get[TableInstance](query=First[TableInstance](query=self))
@@ -494,7 +612,18 @@ class Objects(
         in_pool: bool = True,
         use_callbacks: bool = True,
     ) -> list[TableInstance]:
-        results = await super().run(node=node, in_pool=in_pool)
+        if self._prefetched_results is not None:
+            results = self._prefetched_results
+        else:
+            results = await super().run(node=node, in_pool=in_pool)
+
+            if self.prefetch_related_delegate.foreign_keys:
+                await prefetch_related(
+                    results,
+                    *self.prefetch_related_delegate.foreign_keys,
+                    node=node,
+                    in_pool=in_pool,
+                )
 
         if use_callbacks:
             # With callbacks, the user can return any data that they want.

@@ -471,6 +471,21 @@ class CallbackDelegate:
 
 
 @dataclass
+class PrefetchRelatedDelegate:
+    """
+    Example usage:
+
+    .prefetch_related(Band.manager)
+    """
+
+    foreign_keys: list[ForeignKey] = field(default_factory=list)
+
+    def prefetch_related(self, *foreign_keys: ForeignKey):
+        combined = [*self.foreign_keys, *foreign_keys]
+        self.foreign_keys = combined
+
+
+@dataclass
 class PrefetchDelegate:
     """
     Example usage:
