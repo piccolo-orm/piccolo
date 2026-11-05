@@ -5,3 +5,4 @@ targ>=0.7.0
 inflection>=0.5.1
 typing-extensions>=4.3.0
 pydantic[email]==2.*
+tomli;python_version<="3.10"
