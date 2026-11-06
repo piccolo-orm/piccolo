@@ -22,33 +22,35 @@ class TestDistinctValidateOn(TestCase):
     def _distinct_on_band(self) -> Distinct:
         return Distinct(enabled=True, on=[Album.band])
 
-    def test_querystring_as_first_order_by_should_raise(self):
+    def test_querystring_as_first_order_by_is_allowed(self):
         """
-        A QueryString as the first order_by column must raise
-        DistinctOnError, since it can never match a Column passed to
-        distinct(on=...).
+        A QueryString as the first order_by column isn't rejected, as it can
+        match the column passed to distinct(on=...). For example
+        ``QueryString("{}", Album.band)`` compiles to the same expression.
+        Postgres reports a genuine mismatch itself.
         """
         order_by = OrderBy(
             order_by_items=[
-                OrderByItem(columns=[QueryString("random()")], ascending=True)
+                OrderByItem(
+                    columns=[QueryString("{}", Album.band)], ascending=True
+                )
             ]
         )
-        with self.assertRaises(DistinctOnError):
-            self._distinct_on_band().validate_on(order_by)
+        self._distinct_on_band().validate_on(order_by)
 
-    def test_orderbyraw_as_first_order_by_should_raise(self):
+    def test_orderbyraw_as_first_order_by_is_allowed(self):
         """
-        An OrderByRaw as the first order_by column must raise
-        DistinctOnError, since it can never match a Column passed to
-        distinct(on=...).
+        Same as above, but using ``OrderByRaw``, which existing code relies
+        on.
         """
         order_by = OrderBy(
             order_by_items=[
-                OrderByItem(columns=[OrderByRaw("random()")], ascending=True)
+                OrderByItem(
+                    columns=[OrderByRaw('"album"."band"')], ascending=True
+                )
             ]
         )
-        with self.assertRaises(DistinctOnError):
-            self._distinct_on_band().validate_on(order_by)
+        self._distinct_on_band().validate_on(order_by)
 
     def test_mismatched_column_still_raises(self):
         """

@@ -4,7 +4,9 @@ from piccolo.columns.column_types import Vector
 from piccolo.query.mixins import OrderBy, OrderByItem, OrderByRaw
 from piccolo.querystring import QueryString
 from piccolo.table import Table
+from piccolo.testing.test_case import TableTest
 from tests.base import postgres_only
+from tests.example_apps.music.tables import Band, Manager
 
 
 class ItemTable(Table):
@@ -63,3 +65,44 @@ class TestOrderByQueryString(TestCase):
         sql = str(ob.querystring)
         self.assertIn("<=>", sql)
         self.assertIn("random()", sql)
+
+
+class TestOrderByQueryStringJoins(TestCase):
+
+    def test_join_added_for_querystring_column(self):
+        """
+        Make sure that if a QueryString in order_by references a column on a
+        related table, the join is added.
+        """
+        query = Band.select(Band.name).order_by(
+            QueryString("{}", Band.manager.name)
+        )
+        sql = str(query)
+        self.assertIn('LEFT JOIN "manager" "band$manager"', sql)
+        self.assertIn('ORDER BY "band$manager"."name" ASC', sql)
+
+
+class TestOrderByQueryStringJoinsRun(TableTest):
+    tables = [Manager, Band]
+
+    def test_query_runs(self):
+        """
+        Make sure the query with a join from order_by actually runs, and
+        orders by the related column.
+        """
+        guido = Manager({Manager.name: "Guido"})
+        graydon = Manager({Manager.name: "Graydon"})
+        Manager.insert(guido, graydon).run_sync()
+        Band.insert(
+            Band({Band.name: "Pythonistas", Band.manager: guido}),
+            Band({Band.name: "Rustaceans", Band.manager: graydon}),
+        ).run_sync()
+
+        response = (
+            Band.select(Band.name)
+            .order_by(QueryString("{}", Band.manager.name), ascending=False)
+            .run_sync()
+        )
+        self.assertListEqual(
+            response, [{"name": "Pythonistas"}, {"name": "Rustaceans"}]
+        )

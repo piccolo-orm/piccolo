@@ -3102,9 +3102,13 @@ class Vector(Column):
     value_type = list
 
     def __init__(self, dimensions: int = 1536, **kwargs):
+        # Imported here to avoid a circular import.
+        from piccolo.engine.extensions import mark_extension_used
+
         self.dimensions = dimensions
         super().__init__(**kwargs)
         self._meta.params["dimensions"] = dimensions
+        mark_extension_used(self.required_extension)
 
     @property
     def column_type(self) -> str:

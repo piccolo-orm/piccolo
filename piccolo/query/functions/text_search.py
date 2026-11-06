@@ -12,10 +12,41 @@ from piccolo.columns.base import Column
 from piccolo.querystring import QueryString
 
 
-class ToTsvector(QueryString):
+class _ConfigurableTextSearchFunction(QueryString):
+    """
+    Base class for text search functions which take an optional
+    ``regconfig`` as the first argument - for example
+    ``to_tsquery([config,] query)``.
+    """
+
+    function_name: str
+
+    def __init__(
+        self,
+        value: Union[Column, QueryString, str],
+        config: Optional[Union[Column, QueryString, str]] = None,
+        alias: Optional[str] = None,
+    ):
+        if alias is None:
+            alias = self.function_name
+
+        if config is not None:
+            super().__init__(
+                f"{self.function_name}({{}}, {{}})",
+                config,
+                value,
+                alias=alias,
+            )
+        else:
+            super().__init__(f"{self.function_name}({{}})", value, alias=alias)
+
+
+class ToTsvector(_ConfigurableTextSearchFunction):
     """
     Converts text to a ``tsvector`` for full-text search indexing.
     """
+
+    function_name = "to_tsvector"
 
     def __init__(
         self,
@@ -23,18 +54,15 @@ class ToTsvector(QueryString):
         config: Optional[Union[Column, QueryString, str]] = None,
         alias: Optional[str] = "to_tsvector",
     ):
-        if config is not None:
-            super().__init__(
-                "to_tsvector({}, {})", config, document, alias=alias
-            )
-        else:
-            super().__init__("to_tsvector({})", document, alias=alias)
+        super().__init__(document, config=config, alias=alias)
 
 
-class ToTsquery(QueryString):
+class ToTsquery(_ConfigurableTextSearchFunction):
     """
     Converts a query string to a ``tsquery``.
     """
+
+    function_name = "to_tsquery"
 
     def __init__(
         self,
@@ -42,16 +70,15 @@ class ToTsquery(QueryString):
         config: Optional[Union[Column, QueryString, str]] = None,
         alias: Optional[str] = "to_tsquery",
     ):
-        if config is not None:
-            super().__init__("to_tsquery({}, {})", config, query, alias=alias)
-        else:
-            super().__init__("to_tsquery({})", query, alias=alias)
+        super().__init__(query, config=config, alias=alias)
 
 
-class PlaintoTsquery(QueryString):
+class PlaintoTsquery(_ConfigurableTextSearchFunction):
     """
     Converts plain text to a ``tsquery`` (no special operators).
     """
+
+    function_name = "plainto_tsquery"
 
     def __init__(
         self,
@@ -59,18 +86,15 @@ class PlaintoTsquery(QueryString):
         config: Optional[Union[Column, QueryString, str]] = None,
         alias: Optional[str] = "plainto_tsquery",
     ):
-        if config is not None:
-            super().__init__(
-                "plainto_tsquery({}, {})", config, query, alias=alias
-            )
-        else:
-            super().__init__("plainto_tsquery({})", query, alias=alias)
+        super().__init__(query, config=config, alias=alias)
 
 
-class PhrasetoTsquery(QueryString):
+class PhrasetoTsquery(_ConfigurableTextSearchFunction):
     """
     Converts text to a ``tsquery`` matching the exact phrase.
     """
+
+    function_name = "phraseto_tsquery"
 
     def __init__(
         self,
@@ -78,18 +102,15 @@ class PhrasetoTsquery(QueryString):
         config: Optional[Union[Column, QueryString, str]] = None,
         alias: Optional[str] = "phraseto_tsquery",
     ):
-        if config is not None:
-            super().__init__(
-                "phraseto_tsquery({}, {})", config, query, alias=alias
-            )
-        else:
-            super().__init__("phraseto_tsquery({})", query, alias=alias)
+        super().__init__(query, config=config, alias=alias)
 
 
-class WebsearchToTsquery(QueryString):
+class WebsearchToTsquery(_ConfigurableTextSearchFunction):
     """
     Converts a web-search-style query string to a ``tsquery``.
     """
+
+    function_name = "websearch_to_tsquery"
 
     def __init__(
         self,
@@ -97,12 +118,7 @@ class WebsearchToTsquery(QueryString):
         config: Optional[Union[Column, QueryString, str]] = None,
         alias: Optional[str] = "websearch_to_tsquery",
     ):
-        if config is not None:
-            super().__init__(
-                "websearch_to_tsquery({}, {})", config, query, alias=alias
-            )
-        else:
-            super().__init__("websearch_to_tsquery({})", query, alias=alias)
+        super().__init__(query, config=config, alias=alias)
 
 
 class TsRank(QueryString):
@@ -179,6 +195,11 @@ class Setweight(QueryString):
 class TsHeadline(QueryString):
     """
     Highlights matching terms in a document for display.
+
+    :param options:
+        Optional string of ``ts_headline`` options - for example
+        ``'StartSel=<b>, StopSel=</b>, MaxWords=20'``.
+
     """
 
     def __init__(
@@ -189,18 +210,15 @@ class TsHeadline(QueryString):
         options: Optional[str] = None,
         alias: Optional[str] = "ts_headline",
     ):
+        args: list[Union[Column, QueryString, str]] = []
         if config is not None:
-            super().__init__(
-                "ts_headline({}, {}, {})",
-                config,
-                document,
-                query,
-                alias=alias,
-            )
-        else:
-            super().__init__(
-                "ts_headline({}, {})", document, query, alias=alias
-            )
+            args.append(config)
+        args += [document, query]
+        if options is not None:
+            args.append(options)
+
+        placeholders = ", ".join("{}" for _ in args)
+        super().__init__(f"ts_headline({placeholders})", *args, alias=alias)
 
 
 __all__ = (

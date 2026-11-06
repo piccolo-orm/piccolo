@@ -67,9 +67,9 @@ class Distinct:
         else:
             if not self.on:
                 validated = False
-            elif not isinstance(first_order_column, Column):
-                validated = False
-            elif not self.on[0]._equals(first_order_column):
+            elif isinstance(first_order_column, Column) and not self.on[
+                0
+            ]._equals(first_order_column):
                 validated = False
 
         if not validated:
@@ -290,13 +290,16 @@ class OrderByDelegate:
         """
         Used to work out which columns are needed for joins.
         """
-        return [
-            i
-            for i in itertools.chain(
-                *[i.columns for i in self._order_by.order_by_items]
-            )
-            if isinstance(i, Column)
-        ]
+        columns: list[Column] = []
+        for item in itertools.chain(
+            *[i.columns for i in self._order_by.order_by_items]
+        ):
+            if isinstance(item, Column):
+                columns.append(item)
+            elif isinstance(item, QueryString):
+                # For example `Band.manager.name.trigram_distance('Bob')`.
+                columns.extend(item.columns)
+        return columns
 
     def order_by(self, *columns: Union[Column, QueryString], ascending=True):
         if len(columns) < 1:

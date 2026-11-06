@@ -102,6 +102,6 @@ class Create(DDL):
             from piccolo.engine.extensions import check_extensions_for_create
 
             await check_extensions_for_create(
-                engine, list(self.table._meta.columns)
+                engine, list(self.table._meta.columns), in_pool=in_pool
             )
         return await super().run(in_pool=in_pool)

@@ -200,6 +200,34 @@ class TestTsHeadline(TestCase):
         self.assertIn("ts_headline", sql)
         self.assertIn("english", sql)
 
+    def test_with_options(self):
+        """
+        Make sure the options are added as the last argument.
+        """
+        qs = TsHeadline(
+            "document text",
+            "python",
+            options="MaxWords=5",
+        )
+        self.assertEqual(
+            str(qs), "ts_headline('document text', 'python', 'MaxWords=5')"
+        )
+
+    def test_with_config_and_options(self):
+        """
+        Make sure the config comes first, and the options last.
+        """
+        qs = TsHeadline(
+            "document text",
+            "python",
+            config="english",
+            options="MaxWords=5",
+        )
+        self.assertEqual(
+            str(qs),
+            "ts_headline('english', 'document text', 'python', 'MaxWords=5')",
+        )
+
 
 @postgres_only
 class TestSimilarity(TestCase):

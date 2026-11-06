@@ -354,6 +354,7 @@ class PostgresEngine(Engine[PostgresTransaction]):
         "extensions",
         "extra_nodes",
         "pool",
+        "_extension_schemas",
     )
 
     def __init__(
@@ -373,6 +374,9 @@ class PostgresEngine(Engine[PostgresTransaction]):
         self.log_responses = log_responses
         self.extra_nodes = extra_nodes
         self.pool: Optional[Pool] = None
+        # Maps an extension name to the schema it's installed in - used when
+        # registering codecs for extension types (e.g. pgvector).
+        self._extension_schemas: dict[str, str] = {}
         database_name = config.get("database", "Unknown")
         self.current_transaction = contextvars.ContextVar(
             f"pg_current_transaction_{database_name}", default=None
@@ -466,9 +470,17 @@ class PostgresEngine(Engine[PostgresTransaction]):
         else:
             config = dict(self.config)
             config.update(**kwargs)
-            self.pool = await asyncpg.create_pool(
-                **config, init=register_codecs
-            )
+
+            # Chain the user's own `init` hook (if any) after ours, so they
+            # can still override our codecs if they want to.
+            user_init = config.pop("init", None)
+
+            async def init(connection: Connection) -> None:
+                await self._register_codecs(connection)
+                if user_init is not None:
+                    await user_init(connection)
+
+            self.pool = await asyncpg.create_pool(**config, init=init)
 
     async def close_connection_pool(self) -> None:
         if self.pool:
@@ -484,8 +496,17 @@ class PostgresEngine(Engine[PostgresTransaction]):
         Returns a new connection - doesn't retrieve it from the pool.
         """
         conn = await asyncpg.connect(**self.config)
-        await register_codecs(conn)
+        await self._register_codecs(conn)
         return conn
+
+    async def _register_codecs(self, connection: Connection) -> None:
+        """
+        Register codecs for extension types (e.g. pgvector), so values are
+        returned as Python objects rather than strings.
+        """
+        # The extension column types are Postgres only.
+        if self.engine_type == "postgres":
+            await register_codecs(connection, self._extension_schemas)
 
     ###########################################################################
 
