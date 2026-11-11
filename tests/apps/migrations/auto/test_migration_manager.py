@@ -1107,6 +1107,60 @@ class TestMigrationManager(DBTestCase):
             OnDelete.no_action,
         )
 
+    @engines_only("postgres", "cockroach")
+    def test_alter_fk_on_delete_keeps_on_update(self):
+        """
+        Auto migrations only include the rule which changed. Altering
+        ``on_delete`` mustn't reset ``on_update`` to ``NO ACTION``.
+        """
+        # Start with the rules the example app's migrations declare.
+        manager = MigrationManager(app_name="music")
+        manager.alter_column(
+            table_class_name="Band",
+            tablename="band",
+            column_name="manager",
+            db_column_name="manager",
+            params={
+                "on_delete": OnDelete.cascade,
+                "on_update": OnUpdate.cascade,
+            },
+            old_params={
+                "on_delete": OnDelete.no_action,
+                "on_update": OnUpdate.no_action,
+            },
+            column_class=ForeignKey,
+            old_column_class=ForeignKey,
+            schema=None,
+        )
+        asyncio.run(manager.run())
+
+        # This is what `piccolo migrations new --auto` generates when only
+        # `on_delete` changes.
+        manager = MigrationManager(app_name="music")
+        manager.alter_column(
+            table_class_name="Band",
+            tablename="band",
+            column_name="manager",
+            db_column_name="manager",
+            params={"on_delete": OnDelete.set_null},
+            old_params={"on_delete": OnDelete.cascade},
+            column_class=ForeignKey,
+            old_column_class=ForeignKey,
+            schema=None,
+        )
+        asyncio.run(manager.run())
+
+        rules = run_sync(get_fk_constraint_rules(column=Band.manager))
+        self.assertEqual(rules.on_delete, OnDelete.set_null)
+        self.assertEqual(rules.on_update, OnUpdate.cascade)
+
+        # Reverse
+        asyncio.run(manager.run(backwards=True))
+
+        rules = run_sync(get_fk_constraint_rules(column=Band.manager))
+        self.assertEqual(rules.on_delete, OnDelete.cascade)
+        self.assertEqual(rules.on_update, OnUpdate.cascade)
+
     @engines_only("postgres")
     def test_alter_column_unique(self):
         """

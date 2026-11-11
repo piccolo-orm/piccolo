@@ -698,6 +698,14 @@ class MigrationManager:
 
                     assert isinstance(fk_column, ForeignKey)
 
+                    # Auto migrations only list the rule which changed. The
+                    # new constraint still needs the other one, otherwise
+                    # the database falls back to NO ACTION.
+                    if on_delete is None:
+                        on_delete = fk_column._foreign_key_meta.on_delete
+                    if on_update is None:
+                        on_update = fk_column._foreign_key_meta.on_update
+
                     # First drop the existing foreign key constraint
                     constraint_name = await get_fk_constraint_name(
                         column=fk_column
