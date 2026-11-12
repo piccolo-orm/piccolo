@@ -50,6 +50,19 @@ class TestNullIf(AsyncTableTest):
             response, [{"name": "Amazing Venue", "address": None}]
         )
 
+    async def test_filter_expression_not_null(self):
+        await Venue.insert(
+            Venue(name="Missing address", address=None),
+            Venue(name="Empty address", address=""),
+            Venue(name="Known address", address="123 Main Street"),
+        )
+
+        response = await Venue.select(Venue.name).where(
+            NullIf(Venue.address, "").ne(None)
+        )
+
+        self.assertEqual(response, [{"name": "Known address"}])
+
 
 class Ticket(Table):
     name = Varchar()

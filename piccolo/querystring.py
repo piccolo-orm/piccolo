@@ -270,7 +270,7 @@ class QueryString(Selectable):
 
     def __ne__(self, value) -> QueryString:  # type: ignore[override]
         if value is None:
-            return QueryString("{} IS NOT NULL", self, value)
+            return QueryString("{} IS NOT NULL", self)
         else:
             return QueryString("{} != {}", self, value)
 
