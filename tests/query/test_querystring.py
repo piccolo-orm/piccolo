@@ -163,6 +163,37 @@ class TestQueryStringOperators(TestCase):
             ("SELECT price != $1", [10]),
         )
 
+    def test_expression_comparisons(self):
+        expression = QueryString("NULLIF(name, {})", "")
+        for engine_type, first, second in (
+            ("sqlite", "?", "?"),
+            ("postgres", "$1", "$2"),
+            ("cockroach", "$1", "$2"),
+        ):
+            sql = f"NULLIF(name, {first})"
+            comparisons = (
+                ("ne(None)", expression.ne(None), f"{sql} IS NOT NULL", [""]),
+                (
+                    "!= None",
+                    expression != None,  # noqa: E711
+                    f"{sql} IS NOT NULL",
+                    [""],
+                ),
+                ("eq(None)", expression.eq(None), f"{sql} IS NULL", [""]),
+                (
+                    'ne("a")',
+                    expression.ne("a"),
+                    f"{sql} != {second}",
+                    ["", "a"],
+                ),
+            )
+            for comparison, query, expected_sql, parameters in comparisons:
+                with self.subTest(engine=engine_type, comparison=comparison):
+                    self.assertEqual(
+                        query.compile_string(engine_type),
+                        (expected_sql, parameters),
+                    )
+
     def test_is_in(self):
         query = QueryString("SELECT price").is_in([10, 20, 30])
         self.assertIsInstance(query, QueryString)
