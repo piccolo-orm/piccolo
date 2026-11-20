@@ -109,7 +109,8 @@ class QueryString(Selectable):
     ) -> tuple[Sequence[Any], Sequence[Column]]:
         """
         If a Column is passed in, we convert it to the name of the column
-        (including joins).
+        (including joins). If a ``Query`` is passed in, we use its underlying
+        ``QueryString``, so queries can be nested within each other.
         """
         from piccolo.columns import Column
 
@@ -117,6 +118,17 @@ class QueryString(Selectable):
         columns = []
 
         for arg in args:
+            # We can't import ``Query`` here, as it causes a circular import
+            # (``QueryString`` is used when the column types are defined).
+            if hasattr(arg, "querystrings"):
+                querystrings = arg.querystrings
+                if len(querystrings) != 1:
+                    raise ValueError(
+                        "Only queries which consist of a single statement "
+                        "can be used within a QueryString."
+                    )
+                arg = querystrings[0]
+
             if isinstance(arg, Column):
                 columns.append(arg)
                 arg = QueryString(
