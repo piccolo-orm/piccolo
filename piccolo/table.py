@@ -1128,7 +1128,7 @@ class Table(metaclass=TableMetaclass):
         return query
 
     @classmethod
-    def raw(cls, sql: str, *args: Any) -> Raw:
+    def raw(cls, sql: Union[str, QueryString], *args: Any) -> Raw:
         """
         Execute raw SQL queries on the underlying engine - use with caution!
 
@@ -1142,7 +1142,28 @@ class Table(metaclass=TableMetaclass):
 
             await Band.raw("SELECT * FROM band WHERE name = {}", 'Pythonistas')
 
+        You can also pass in a
+        :class:`QueryString <piccolo.querystring.QueryString>`, which can
+        wrap other queries:
+
+        .. code-block:: python
+
+            await Band.raw(
+                QueryString(
+                    "SELECT COUNT(*) AS total FROM ({}) AS sub",
+                    Band.select(Band.name),
+                )
+            )
+
         """
+        if isinstance(sql, QueryString):
+            if args:
+                raise ValueError(
+                    "No extra arguments can be passed in when `sql` is a "
+                    "`QueryString`."
+                )
+            return Raw(table=cls, querystring=sql)
+
         return Raw(table=cls, querystring=QueryString(sql, *args))
 
     @classmethod
